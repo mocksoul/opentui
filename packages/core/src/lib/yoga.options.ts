@@ -14,7 +14,7 @@ import {
   PositionType,
   Unit,
   Wrap,
-} from "bun-yoga"
+} from "@simonklee/yoga"
 
 export type AlignString =
   | "auto"
