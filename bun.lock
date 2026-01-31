@@ -12,7 +12,7 @@
       "name": "@opentui/core",
       "version": "0.1.75",
       "dependencies": {
-        "@simonklee/yoga": "0.2.28",
+        "@simonklee/yoga": "0.2.29",
         "bun-ffi-structs": "0.1.2",
         "diff": "8.0.2",
         "jimp": "1.6.0",
@@ -440,7 +440,7 @@
 
     "@shikijs/vscode-textmate": ["@shikijs/vscode-textmate@10.0.2", "", {}, "sha512-83yeghZ2xxin3Nj8z1NMd/NCuca+gsYXswywDy5bHvwlWL8tpTQmzGeUuHd9FC3E/SBEMvzJRwWEOz5gGes9Qg=="],
 
-    "@simonklee/yoga": ["@simonklee/yoga@0.2.28", "", {}, "sha512-GIjUz7njvrWtm7qGcxjw5Wf5Pxx72duxcLbWo1RspQZxozxEWQwyyz/zESXz5Vc6V5xm2yIZBz6EVOCoORs2OA=="],
+    "@simonklee/yoga": ["@simonklee/yoga@0.2.29", "", {}, "sha512-AxMzOuXKk2nJTmnPdWweQZp6E3VNInTfcyxmrwnVixrbyHlMDt48DcdiE82zjqTZpOM/ZF8930w2NncUJHbhSw=="],
 
     "@tokenizer/token": ["@tokenizer/token@0.3.0", "", {}, "sha512-OvjF+z51L3ov0OyAU0duzsYuvO01PH7x4t6DJx+guahgTnBHkhJdG7soQeTSFLWN3efnHyibZ4Z8l2EuWwJN3A=="],
 
