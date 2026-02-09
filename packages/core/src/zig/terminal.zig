@@ -95,6 +95,7 @@ capability_queries_pending: bool = false,
 state: struct {
     alt_screen: bool = false,
     kitty_keyboard: bool = false,
+    kitty_keyboard_flags: u8 = 0,
     bracketed_paste: bool = false,
     mouse: bool = false,
     pixel_mouse: bool = false,
@@ -473,11 +474,13 @@ pub fn setKittyKeyboard(self: *Terminal, tty: anytype, enable: bool, flags: u8) 
         if (!self.state.kitty_keyboard) {
             try tty.print(ansi.ANSI.csiUPush, .{flags});
             self.state.kitty_keyboard = true;
+            self.state.kitty_keyboard_flags = flags;
         }
     } else {
         if (self.state.kitty_keyboard) {
             try tty.writeAll(ansi.ANSI.csiUPop);
             self.state.kitty_keyboard = false;
+            self.state.kitty_keyboard_flags = 0;
         }
     }
 }
@@ -530,9 +533,11 @@ pub fn restoreTerminalModes(self: *Terminal, tty: anytype) !void {
         try tty.writeAll(ansi.ANSI.bracketedPasteSet);
     }
 
-    // Re-push kitty keyboard protocol if active
+    // Pop stale entry then re-push kitty keyboard protocol to avoid stack growth.
+    // Both sequences are in the same write buffer so the terminal processes them atomically.
     if (self.state.kitty_keyboard) {
-        try tty.print(ansi.ANSI.csiUPush, .{self.opts.kitty_keyboard_flags});
+        try tty.writeAll(ansi.ANSI.csiUPop);
+        try tty.print(ansi.ANSI.csiUPush, .{self.state.kitty_keyboard_flags});
     }
 
     // Re-enable modifyOtherKeys if active
