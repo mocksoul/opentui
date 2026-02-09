@@ -488,6 +488,59 @@ pub fn setModifyOtherKeys(self: *Terminal, tty: anytype, enable: bool) !void {
     self.state.modify_other_keys = enable;
 }
 
+/// Re-send all currently-active terminal mode escape sequences unconditionally.
+///
+/// When the terminal loses and regains focus (e.g. alt-tab, tab switch, minimize),
+/// some terminal emulators (notably Windows Terminal / ConPTY) strip or reset
+/// DEC private modes like mouse tracking (?1000/?1002/?1003/?1006), focus
+/// tracking (?1004), and bracketed paste (?2004). This function re-emits the
+/// enable sequences for every mode that our state tracking says is currently on,
+/// without checking whether the mode "should" already be enabled — because the
+/// terminal may have silently disabled it.
+///
+/// This should be called in response to the focus-in event (\x1b[I).
+///
+/// Per the xterm ctlseqs spec (Patch #401, 2025/06/22) and the Microsoft
+/// Console Virtual Terminal Sequences documentation, the relevant DECSET
+/// private modes are:
+///   ?1000h  - Normal mouse tracking (sends button press/release)
+///   ?1002h  - Button-event tracking (adds drag reporting)
+///   ?1003h  - Any-event tracking (adds all motion reporting)
+///   ?1006h  - SGR extended mouse mode (extended coordinate encoding)
+///   ?1004h  - Focus event tracking (sends \x1b[I / \x1b[O)
+///   ?2004h  - Bracketed paste mode (wraps pasted text in markers)
+///   Kitty keyboard protocol (CSI > flags u) - progressive enhancement
+///   modifyOtherKeys (CSI > 4 ; 1 m) - xterm key modification
+pub fn restoreTerminalModes(self: *Terminal, tty: anytype) !void {
+    // Re-enable mouse tracking modes if active
+    if (self.state.mouse) {
+        try tty.writeAll(ansi.ANSI.enableMouseTracking);
+        try tty.writeAll(ansi.ANSI.enableButtonEventTracking);
+        try tty.writeAll(ansi.ANSI.enableAnyEventTracking);
+        try tty.writeAll(ansi.ANSI.enableSGRMouseMode);
+    }
+
+    // Re-enable focus tracking if active
+    if (self.state.focus_tracking) {
+        try tty.writeAll(ansi.ANSI.focusSet);
+    }
+
+    // Re-enable bracketed paste if active
+    if (self.state.bracketed_paste) {
+        try tty.writeAll(ansi.ANSI.bracketedPasteSet);
+    }
+
+    // Re-push kitty keyboard protocol if active
+    if (self.state.kitty_keyboard) {
+        try tty.print(ansi.ANSI.csiUPush, .{self.opts.kitty_keyboard_flags});
+    }
+
+    // Re-enable modifyOtherKeys if active
+    if (self.state.modify_other_keys) {
+        try tty.writeAll(ansi.ANSI.modifyOtherKeysSet);
+    }
+}
+
 /// The responses look like these:
 /// kitty - '\x1B[?1016;2$y\x1B[?2027;0$y\x1B[?2031;2$y\x1B[?1004;1$y\x1B[?2026;2$y\x1B[1;2R\x1B[1;3R\x1BP>|kitty(0.40.1)\x1B\\\x1B[?0u\x1B_Gi=1;EINVAL:Zero width/height not allowed\x1B\\\x1B[?62;c'
 /// ghostty - '\x1B[?1016;1$y\x1B[?2027;1$y\x1B[?2031;2$y\x1B[?1004;1$y\x1B[?2004;2$y\x1B[?2026;2$y\x1B[1;1R\x1B[1;1R\x1BP>|ghostty 1.1.3\x1B\\\x1B[?0u\x1B_Gi=1;OK\x1B\\\x1B[?62;22c'
