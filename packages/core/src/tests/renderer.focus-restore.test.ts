@@ -1,4 +1,4 @@
-import { test, expect, beforeEach, afterEach, describe } from "bun:test"
+import { test, expect, beforeEach, afterEach, describe, spyOn } from "bun:test"
 import { Buffer } from "node:buffer"
 import { createTestRenderer, type TestRenderer, type MockInput, type MockMouse } from "../testing/test-renderer"
 import { Renderable } from "../Renderable"
@@ -13,10 +13,7 @@ let renderer: TestRenderer
 let mockInput: MockInput
 let mockMouse: MockMouse
 let renderOnce: () => Promise<void>
-
-// Track calls to restoreTerminalModes via spy
-let restoreTerminalModesCalls: number
-let originalRestoreTerminalModes: any
+let restoreSpy: ReturnType<typeof spyOn>
 
 beforeEach(async () => {
   await new Promise((resolve) => setTimeout(resolve, 15))
@@ -24,26 +21,15 @@ beforeEach(async () => {
     useMouse: true,
   }))
 
-  // Mock capability functions to avoid interfering with test terminal
-  // @ts-expect-error - mocking for test
-  renderer.lib.processCapabilityResponse = () => {}
-  // @ts-expect-error - mocking for test
-  renderer.lib.getTerminalCapabilities = () => ({ unicode: "unicode" })
-
-  // Spy on restoreTerminalModes
-  restoreTerminalModesCalls = 0
-  // @ts-expect-error - accessing for spy
-  originalRestoreTerminalModes = renderer.lib.restoreTerminalModes
-  // @ts-expect-error - mocking for test
-  renderer.lib.restoreTerminalModes = (...args: any[]) => {
-    restoreTerminalModesCalls++
-    originalRestoreTerminalModes.call(renderer.lib, ...args)
-  }
+  // Spy on restoreTerminalModes — spyOn wraps the real method, tracks calls,
+  // and mockRestore() in afterEach puts the original back on the singleton.
+  // No capability mocks are needed: the sequences under test (\x1b[I, \x1b[O)
+  // are not capability responses and never reach processCapabilityResponse.
+  restoreSpy = spyOn(renderer.lib, "restoreTerminalModes")
 })
 
 afterEach(() => {
-  // @ts-expect-error - restore mock
-  renderer.lib.restoreTerminalModes = originalRestoreTerminalModes
+  restoreSpy.mockRestore()
   renderer.destroy()
 })
 
@@ -52,25 +38,22 @@ describe("focus restore - terminal mode re-enable on focus-in", () => {
     renderer.stdin.emit("data", Buffer.from("\x1b[I"))
     await new Promise((resolve) => setTimeout(resolve, 15))
 
-    expect(restoreTerminalModesCalls).toBe(1)
+    expect(restoreSpy).toHaveBeenCalledTimes(1)
   })
 
   test("restoreTerminalModes is NOT called on blur event", async () => {
     renderer.stdin.emit("data", Buffer.from("\x1b[O"))
     await new Promise((resolve) => setTimeout(resolve, 15))
 
-    expect(restoreTerminalModesCalls).toBe(0)
+    expect(restoreSpy).toHaveBeenCalledTimes(0)
   })
 
   test("restoreTerminalModes is called before focus event is emitted", async () => {
     const callOrder: string[] = []
 
-    // Override spy to track ordering
-    // @ts-expect-error - mocking for test
-    renderer.lib.restoreTerminalModes = (...args: any[]) => {
+    restoreSpy.mockImplementation((...args: any[]) => {
       callOrder.push("restoreTerminalModes")
-      originalRestoreTerminalModes.call(renderer.lib, ...args)
-    }
+    })
 
     renderer.on("focus", () => {
       callOrder.push("focus-event")
@@ -96,7 +79,7 @@ describe("focus restore - terminal mode re-enable on focus-in", () => {
     renderer.stdin.emit("data", Buffer.from("\x1b[I"))
     await new Promise((resolve) => setTimeout(resolve, 15))
 
-    expect(restoreTerminalModesCalls).toBe(2)
+    expect(restoreSpy).toHaveBeenCalledTimes(2)
   })
 
   test("focus-in emits focus event on the renderer", async () => {
@@ -165,7 +148,7 @@ describe("focus restore - terminal mode re-enable on focus-in", () => {
     await new Promise((resolve) => setTimeout(resolve, 15))
 
     // Verify restoreTerminalModes was called
-    expect(restoreTerminalModesCalls).toBe(1)
+    expect(restoreSpy).toHaveBeenCalledTimes(1)
 
     // Verify mouse still works after focus restore
     await mockMouse.click(5, 5)
@@ -212,6 +195,6 @@ describe("focus restore - terminal mode re-enable on focus-in", () => {
     }
     await new Promise((resolve) => setTimeout(resolve, 15))
 
-    expect(restoreTerminalModesCalls).toBe(10)
+    expect(restoreSpy).toHaveBeenCalledTimes(10)
   })
 })
