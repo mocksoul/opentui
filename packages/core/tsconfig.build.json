@@ -11,5 +11,5 @@
     "skipLibCheck": true
   },
   "include": ["src/**/*"],
-  "exclude": ["**/*.test.ts", "**/*.spec.ts", "src/examples/**/*", "src/benchmark/**/*", "src/zig/**/*"]
+  "exclude": ["**/*.test.ts", "**/*.spec.ts", "**/*.deno.ts", "src/examples/**/*", "src/benchmark/**/*", "src/zig/**/*"]
 }
