@@ -1,4 +1,4 @@
-import { ptr, toArrayBuffer, type Pointer } from "./ffi"
+import { pointerToBigInt, ptr, toArrayBuffer, type Pointer } from "./ffi"
 
 type PrimitiveType = "u8" | "bool_u8" | "bool_u32" | "u16" | "i16" | "u32" | "i32" | "u64" | "f32" | "f64" | "pointer"
 type StructType = PrimitiveType | "char*"
@@ -100,7 +100,6 @@ export function defineEnum<T extends Record<string, number>>(mapping: T, base: P
 export function defineStruct<T = any>(fields: FieldDef[], options: StructDefOptions<T> = {}): BuiltStruct<T> {
   let offset = 0
   const layout: LayoutEntry[] = []
-  const lengthFields = new Set<string>()
 
   for (const [name, rawType, rawOptions] of fields) {
     const fieldOptions: FieldOptions = rawOptions ?? {}
@@ -148,15 +147,22 @@ export function defineStruct<T = any>(fields: FieldDef[], options: StructDefOpti
       enumDef,
     })
 
-    if (fieldOptions.lengthOf) {
-      lengthFields.add(name)
-    }
-
     offset += size
   }
 
   const size = alignOffset(offset, pointerSize)
   const byName = new Map(layout.map((entry) => [entry.name, entry]))
+  const inferredLengthFieldFor = new Map<string, string>()
+
+  for (const entry of layout) {
+    if (!entry.lengthOf) {
+      continue
+    }
+
+    if (entry.kind === "primitive" || entry.kind === "enum") {
+      inferredLengthFieldFor.set(entry.lengthOf, entry.name)
+    }
+  }
 
   function pack(value: T | Record<string, unknown>): ArrayBuffer {
     const input = options.reduceValue ? options.reduceValue(value as T) : (value as Record<string, unknown>)
@@ -174,6 +180,21 @@ export function defineStruct<T = any>(fields: FieldDef[], options: StructDefOpti
       if (entry.packTransform) {
         fieldValue = entry.packTransform(fieldValue)
       }
+
+      if ((entry.kind === "primitive" || entry.kind === "enum") && entry.lengthOf) {
+        const sourceValue = input[entry.lengthOf]
+
+        if (typeof sourceValue === "string") {
+          fieldValue = encoder.encode(sourceValue).length
+        } else if (Array.isArray(sourceValue)) {
+          fieldValue = sourceValue.length
+        } else if (sourceValue instanceof ArrayBuffer) {
+          fieldValue = sourceValue.byteLength
+        } else if (ArrayBuffer.isView(sourceValue)) {
+          fieldValue = sourceValue.byteLength
+        }
+      }
+
       if (fieldValue === undefined && entry.optional) {
         fieldValue = null
       }
@@ -252,7 +273,8 @@ export function defineStruct<T = any>(fields: FieldDef[], options: StructDefOpti
         }
         case "char_ptr": {
           const pointer = readPrimitive(view, "pointer", entry.offset) as number | bigint
-          const len = entry.lengthOf ? Number(out[entry.lengthOf] ?? 0) : 0
+          const lenField = entry.lengthOf ?? inferredLengthFieldFor.get(entry.name)
+          const len = lenField ? Number(out[lenField] ?? 0) : 0
           if (!pointer || len <= 0) {
             value = ""
           } else {
@@ -263,7 +285,8 @@ export function defineStruct<T = any>(fields: FieldDef[], options: StructDefOpti
         }
         case "array": {
           const pointer = readPrimitive(view, "pointer", entry.offset) as number | bigint
-          const len = entry.lengthOf ? Number(out[entry.lengthOf] ?? 0) : 0
+          const lenField = entry.lengthOf ?? inferredLengthFieldFor.get(entry.name)
+          const len = lenField ? Number(out[lenField] ?? 0) : 0
           if (!pointer || len <= 0) {
             value = []
           } else {
@@ -292,11 +315,20 @@ export function defineStruct<T = any>(fields: FieldDef[], options: StructDefOpti
   function packList(values: Array<T | Record<string, unknown>>): ArrayBuffer {
     const listBuffer = new ArrayBuffer(size * values.length)
     const outView = new Uint8Array(listBuffer)
+    const refs: ArrayBuffer[] = []
 
     for (let i = 0; i < values.length; i++) {
       const packed = pack(values[i])
       outView.set(new Uint8Array(packed), i * size)
+
+      refs.push(packed)
+      const packedRefs = (packed as ArrayBuffer & { _refs?: ArrayBuffer[] })._refs
+      if (packedRefs) {
+        refs.push(...packedRefs)
+      }
     }
+
+    ;(listBuffer as ArrayBuffer & { _refs?: ArrayBuffer[] })._refs = refs
 
     return listBuffer
   }
@@ -356,7 +388,7 @@ function writePrimitive(view: DataView, type: PrimitiveType, offset: number, val
       view.setFloat64(offset, Number(value ?? 0), true)
       return
     case "pointer": {
-      const pointer = value == null ? 0n : BigInt(value as number | bigint)
+      const pointer = pointerToBigInt(value)
       if (pointerSize === 8) {
         view.setBigUint64(offset, pointer, true)
       } else {

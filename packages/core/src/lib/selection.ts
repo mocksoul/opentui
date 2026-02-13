@@ -1,4 +1,5 @@
-import { Renderable, type ViewportBounds } from ".."
+import { Renderable } from "../Renderable"
+import type { ViewportBounds } from "../types"
 import { coordinateToCharacterIndex, fonts } from "./ascii.font"
 
 class SelectionAnchor {

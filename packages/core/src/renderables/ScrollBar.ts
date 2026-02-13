@@ -2,6 +2,7 @@ import type { OptimizedBuffer } from "../buffer"
 import { parseColor, RGBA, type ColorInput } from "../lib"
 import type { KeyEvent } from "../lib/KeyHandler"
 import { Renderable, type RenderableOptions } from "../Renderable"
+import { stringWidth } from "../runtime"
 import type { RenderContext, Timeout } from "../types"
 import { type BoxOptions } from "./Box"
 import { SliderRenderable, type SliderOptions } from "./Slider"
@@ -344,7 +345,7 @@ export class ArrowRenderable extends Renderable {
     }
 
     if (!options.width) {
-      this.width = Bun.stringWidth(this.getArrowChar())
+      this.width = stringWidth(this.getArrowChar())
     }
   }
 

@@ -3,6 +3,7 @@ export type RuntimeKind = "bun" | "deno"
 type BunGlobal = {
   FFI?: unknown
   platform?: string
+  stringWidth?: (value: string) => number
 }
 
 type DenoGlobal = {
@@ -47,6 +48,10 @@ export function detectFfiRuntime(): RuntimeKind {
   throw new Error("Unsupported runtime. Expected Bun or Deno.")
 }
 
+export function isDenoRuntime(): boolean {
+  return getDenoGlobal() !== undefined
+}
+
 export function getRuntimePlatformArch(): { platform: string; arch: string } {
   const proc = getProcessGlobal()
   if (proc?.platform && proc?.arch) {
@@ -85,6 +90,15 @@ export function getDenoEnvGet(): ((key: string) => string | undefined) | undefin
 
 export function getProcessOn(): ((event: string, handler: () => void) => void) | undefined {
   return getProcessGlobal()?.on
+}
+
+export function stringWidth(value: string): number {
+  const bunStringWidth = getBunGlobal()?.stringWidth
+  if (bunStringWidth) {
+    return bunStringWidth(value)
+  }
+
+  return [...value].length
 }
 
 function normalizePlatform(platform: string): string {

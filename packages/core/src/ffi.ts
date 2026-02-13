@@ -1,6 +1,6 @@
 import { detectFfiRuntime, getBunGlobal, getDenoGlobal, type RuntimeKind } from "./runtime"
 
-export type Pointer = number | bigint
+export type Pointer = number | bigint | object
 
 export type NativeType =
   | "void"
@@ -41,7 +41,7 @@ type BunCallbackHandle = {
 }
 
 type DenoCallbackHandle = {
-  pointer: number | bigint
+  pointer: number | bigint | object
   close: () => void
 }
 
@@ -100,9 +100,60 @@ export function dlopen(
   const deno = getDenoFFI()
   const lib = deno.dlopen(path, normalizeSymbolsForRuntime(symbols, runtime))
   return {
-    symbols: lib.symbols as Record<string, any>,
+    symbols: wrapDenoSymbols(lib.symbols as Record<string, any>, symbols),
     close: () => lib.close(),
   }
+}
+
+function wrapDenoSymbols(nativeSymbols: Record<string, any>, symbols: CompatSymbolDefinitions): Record<string, any> {
+  const wrapped: Record<string, any> = {}
+
+  for (const [name, nativeSymbol] of Object.entries(nativeSymbols)) {
+    const definition = symbols[name]
+    if (!definition) {
+      wrapped[name] = nativeSymbol
+      continue
+    }
+
+    const pointerIndices = getPointerParameterIndices(definition)
+    if (pointerIndices.length === 0) {
+      wrapped[name] = nativeSymbol
+      continue
+    }
+
+    wrapped[name] = (...args: any[]) => {
+      const convertedArgs = [...args]
+
+      for (const pointerIndex of pointerIndices) {
+        const value = convertedArgs[pointerIndex]
+        if (value === null || value === undefined) {
+          continue
+        }
+
+        if (value instanceof ArrayBuffer || ArrayBuffer.isView(value)) {
+          convertedArgs[pointerIndex] = ptr(value)
+        }
+      }
+
+      return nativeSymbol(...convertedArgs)
+    }
+  }
+
+  return wrapped
+}
+
+function getPointerParameterIndices(symbol: CompatSymbolDefinition): number[] {
+  const args = symbol.parameters ?? symbol.args ?? []
+  const indices: number[] = []
+
+  for (let i = 0; i < args.length; i++) {
+    const type = args[i]
+    if (type === "ptr" || type === "pointer") {
+      indices.push(i)
+    }
+  }
+
+  return indices
 }
 
 export function ptr(value: ArrayBuffer | ArrayBufferView): Pointer {
@@ -129,7 +180,7 @@ export function toArrayBuffer(pointer: Pointer, byteOffset = 0, byteLength?: num
   }
 
   const deno = getDenoFFI()
-  let targetPointer: number | bigint = pointer
+  let targetPointer: number | bigint | object = pointer
   if (byteOffset > 0 && deno.UnsafePointer.offset) {
     targetPointer = deno.UnsafePointer.offset(pointer, byteOffset)
   }
@@ -139,12 +190,40 @@ export function toArrayBuffer(pointer: Pointer, byteOffset = 0, byteLength?: num
   return view.getArrayBuffer(length)
 }
 
-function toPointer(value: number | bigint | null): Pointer {
+function toPointer(value: number | bigint | object | null): Pointer {
   if (value === null) {
     throw new Error("Received null pointer")
   }
 
   return value
+}
+
+export function pointerToBigInt(pointer: unknown): bigint {
+  if (pointer == null) {
+    return 0n
+  }
+
+  if (typeof pointer === "bigint") {
+    return pointer
+  }
+
+  if (typeof pointer === "number") {
+    return BigInt(pointer)
+  }
+
+  const deno = getDenoGlobal() as any
+  const pointerValue = deno?.UnsafePointer?.value
+  if (typeof pointerValue === "function") {
+    const value = pointerValue(pointer)
+    if (typeof value === "bigint") {
+      return value
+    }
+    if (typeof value === "number") {
+      return BigInt(value)
+    }
+  }
+
+  throw new TypeError("Unsupported pointer value")
 }
 
 function detectRuntime(): RuntimeKind {
@@ -224,17 +303,7 @@ function toDenoType(type: NativeType): string {
   return type
 }
 
-function getBunFFI(): {
-  JSCallback: new (
-    fn: (...args: any[]) => any,
-    definition: { args: NativeType[]; returns: NativeType },
-  ) => BunCallbackHandle
-  callback?: (definition: { args: NativeType[]; returns: NativeType }, fn: (...args: any[]) => any) => BunCallbackHandle
-  closeCallback?: (handle: BunCallbackHandle) => void
-  dlopen: (path: string, symbols: Record<string, any>) => { symbols: Record<string, any>; close: () => void }
-  ptr: (value: ArrayBuffer | ArrayBufferView) => number | bigint
-  toArrayBuffer: (pointer: number | bigint, byteOffset?: number, byteLength?: number) => ArrayBuffer
-} {
+function getBunFFI(): any {
   const bun = getBunGlobal() as { FFI?: any } | undefined
   const bunFFI = bunFFIModule
 
@@ -270,10 +339,11 @@ const denoArrayBufferViews = new WeakMap<ArrayBuffer, Uint8Array>()
 function getDenoFFI(): {
   dlopen: (path: string, symbols: Record<string, any>) => { symbols: Record<string, any>; close: () => void }
   UnsafePointer: {
-    of: (value: ArrayBufferView) => number | bigint | null
-    offset?: (pointer: number | bigint, offset: number) => number | bigint
+    of: (value: ArrayBufferView) => number | bigint | object | null
+    offset?: (pointer: number | bigint | object, offset: number) => number | bigint | object
+    value?: (pointer: unknown) => number | bigint
   }
-  UnsafePointerView: new (pointer: number | bigint) => { getArrayBuffer: (byteLength: number) => ArrayBuffer }
+  UnsafePointerView: new (pointer: number | bigint | object) => { getArrayBuffer: (byteLength: number) => ArrayBuffer }
   UnsafeCallback: new (
     definition: { parameters: string[]; result: string },
     fn: (...args: any[]) => any,

@@ -2383,7 +2383,7 @@ class FFIRenderLib implements RenderLib {
       height,
       respectAlpha,
       widthMethodCode,
-      idBytes,
+      ptr(idBytes),
       idBytes.length,
     )
     if (!bufferPtr) {

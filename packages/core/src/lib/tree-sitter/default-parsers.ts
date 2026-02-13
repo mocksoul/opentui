@@ -6,17 +6,19 @@ import type { FiletypeParserOptions } from "./types"
 import { resolve, dirname } from "path"
 import { fileURLToPath } from "url"
 
-import javascript_highlights from "./assets/javascript/highlights.scm" with { type: "file" }
-import javascript_language from "./assets/javascript/tree-sitter-javascript.wasm" with { type: "file" }
-import typescript_highlights from "./assets/typescript/highlights.scm" with { type: "file" }
-import typescript_language from "./assets/typescript/tree-sitter-typescript.wasm" with { type: "file" }
-import markdown_highlights from "./assets/markdown/highlights.scm" with { type: "file" }
-import markdown_language from "./assets/markdown/tree-sitter-markdown.wasm" with { type: "file" }
-import markdown_injections from "./assets/markdown/injections.scm" with { type: "file" }
-import markdown_inline_highlights from "./assets/markdown_inline/highlights.scm" with { type: "file" }
-import markdown_inline_language from "./assets/markdown_inline/tree-sitter-markdown_inline.wasm" with { type: "file" }
-import zig_highlights from "./assets/zig/highlights.scm" with { type: "file" }
-import zig_language from "./assets/zig/tree-sitter-zig.wasm" with { type: "file" }
+const javascript_highlights = "./assets/javascript/highlights.scm"
+const javascript_language = "./assets/javascript/tree-sitter-javascript.wasm"
+const typescript_highlights = "./assets/typescript/highlights.scm"
+const typescript_language = "./assets/typescript/tree-sitter-typescript.wasm"
+const markdown_highlights = "./assets/markdown/highlights.scm"
+const markdown_language = "./assets/markdown/tree-sitter-markdown.wasm"
+const markdown_injections = "./assets/markdown/injections.scm"
+const markdown_inline_highlights = "./assets/markdown_inline/highlights.scm"
+const markdown_inline_language = "./assets/markdown_inline/tree-sitter-markdown_inline.wasm"
+const zig_highlights = "./assets/zig/highlights.scm"
+const zig_language = "./assets/zig/tree-sitter-zig.wasm"
+
+const moduleDir = dirname(fileURLToPath(import.meta.url))
 
 // Cached parsers to avoid re-resolving paths on every call
 let _cachedParsers: FiletypeParserOptions[] | undefined
@@ -27,52 +29,52 @@ export function getParsers(): FiletypeParserOptions[] {
       {
         filetype: "javascript",
         queries: {
-          highlights: [resolve(dirname(fileURLToPath(import.meta.url)), javascript_highlights)],
+          highlights: [resolve(moduleDir, javascript_highlights)],
         },
-        wasm: resolve(dirname(fileURLToPath(import.meta.url)), javascript_language),
+        wasm: resolve(moduleDir, javascript_language),
       },
       {
         filetype: "typescript",
         queries: {
-          highlights: [resolve(dirname(fileURLToPath(import.meta.url)), typescript_highlights)],
+          highlights: [resolve(moduleDir, typescript_highlights)],
         },
-        wasm: resolve(dirname(fileURLToPath(import.meta.url)), typescript_language),
+        wasm: resolve(moduleDir, typescript_language),
       },
       {
         filetype: "markdown",
         queries: {
-          highlights: [resolve(dirname(fileURLToPath(import.meta.url)), markdown_highlights)],
-          injections: [resolve(dirname(fileURLToPath(import.meta.url)), markdown_injections)],
+          highlights: [resolve(moduleDir, markdown_highlights)],
+          injections: [resolve(moduleDir, markdown_injections)],
         },
-        wasm: resolve(dirname(fileURLToPath(import.meta.url)), markdown_language),
+        wasm: resolve(moduleDir, markdown_language),
         injectionMapping: {
-          "nodeTypes": {
-                    "inline": "markdown_inline",
-                    "pipe_table_cell": "markdown_inline"
+          nodeTypes: {
+            inline: "markdown_inline",
+            pipe_table_cell: "markdown_inline",
           },
-          "infoStringMap": {
-                    "javascript": "javascript",
-                    "js": "javascript",
-                    "typescript": "typescript",
-                    "ts": "typescript",
-                    "markdown": "markdown",
-                    "md": "markdown"
-          }
-},
+          infoStringMap: {
+            javascript: "javascript",
+            js: "javascript",
+            typescript: "typescript",
+            ts: "typescript",
+            markdown: "markdown",
+            md: "markdown",
+          },
+        },
       },
       {
         filetype: "markdown_inline",
         queries: {
-          highlights: [resolve(dirname(fileURLToPath(import.meta.url)), markdown_inline_highlights)],
+          highlights: [resolve(moduleDir, markdown_inline_highlights)],
         },
-        wasm: resolve(dirname(fileURLToPath(import.meta.url)), markdown_inline_language),
+        wasm: resolve(moduleDir, markdown_inline_language),
       },
       {
         filetype: "zig",
         queries: {
-          highlights: [resolve(dirname(fileURLToPath(import.meta.url)), zig_highlights)],
+          highlights: [resolve(moduleDir, zig_highlights)],
         },
-        wasm: resolve(dirname(fileURLToPath(import.meta.url)), zig_language),
+        wasm: resolve(moduleDir, zig_language),
       },
     ]
   }

@@ -29,6 +29,7 @@ import {
   type TerminalColors,
   type GetPaletteOptions,
 } from "./lib/terminal-palette"
+import { getDenoGlobal, isDenoRuntime } from "./runtime"
 import {
   isCapabilityResponse,
   isPixelResolutionResponse,
@@ -117,6 +118,26 @@ const KITTY_FLAG_EVENT_TYPES = 0b10 // Report event types (press/repeat/release)
 const KITTY_FLAG_ALTERNATE_KEYS = 0b100 // Report alternate keys (e.g., numpad vs regular)
 const KITTY_FLAG_ALL_KEYS_AS_ESCAPES = 0b1000 // Report all keys as escape codes
 const KITTY_FLAG_REPORT_TEXT = 0b10000 // Report text associated with key events
+
+function isUnsupportedSignalError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false
+  }
+
+  return (
+    (error.message.includes("Binding to signal") && error.message.includes("is not allowed")) ||
+    error.message.includes("Unknown signal") ||
+    error.message.includes("unsupported signal")
+  )
+}
+
+function isUnsupportedRawModeError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false
+  }
+
+  return error.message.includes("ENOTTY") || error.name === "BadResource"
+}
 
 /**
  * Kitty Keyboard Protocol configuration options
@@ -443,7 +464,7 @@ export class CliRenderer extends EventEmitter implements RenderContext {
   private handleError: (error: Error) => void = ((error: Error) => {
     console.error(error)
 
-    if (this._openConsoleOnError) {
+    if (this._openConsoleOnError && this._console) {
       this.console.show()
     }
   }).bind(this)
@@ -472,9 +493,9 @@ export class CliRenderer extends EventEmitter implements RenderContext {
   private exitHandler: () => void = (() => {
     this.destroy()
     if (env.OTUI_DUMP_CAPTURES) {
-      Bun.sleep(100).then(() => {
+      setTimeout(() => {
         this.dumpOutputCache("=== CAPTURED OUTPUT ===\n")
-      })
+      }, 100)
     }
   }).bind(this)
 
@@ -560,7 +581,13 @@ export class CliRenderer extends EventEmitter implements RenderContext {
     }
 
     // Handle terminal resize
-    process.on("SIGWINCH", this.sigwinchHandler)
+    try {
+      process.on("SIGWINCH", this.sigwinchHandler)
+    } catch (error) {
+      if (!isUnsupportedSignalError(error)) {
+        throw error
+      }
+    }
 
     process.on("warning", this.warningHandler)
 
@@ -621,7 +648,13 @@ export class CliRenderer extends EventEmitter implements RenderContext {
     if (this._exitListenersAdded || this.exitSignals.length === 0) return
 
     this.exitSignals.forEach((signal) => {
-      process.addListener(signal, this.exitHandler)
+      try {
+        process.addListener(signal, this.exitHandler)
+      } catch (error) {
+        if (!isUnsupportedSignalError(error)) {
+          throw error
+        }
+      }
     })
 
     this._exitListenersAdded = true
@@ -631,7 +664,13 @@ export class CliRenderer extends EventEmitter implements RenderContext {
     if (!this._exitListenersAdded || this.exitSignals.length === 0) return
 
     this.exitSignals.forEach((signal) => {
-      process.removeListener(signal, this.exitHandler)
+      try {
+        process.removeListener(signal, this.exitHandler)
+      } catch (error) {
+        if (!isUnsupportedSignalError(error)) {
+          throw error
+        }
+      }
     })
 
     this._exitListenersAdded = false
@@ -1112,8 +1151,35 @@ export class CliRenderer extends EventEmitter implements RenderContext {
       return this._keyHandler.processInput(sequence)
     })
 
+    let rawModeEnabled = false
     if (this.stdin.setRawMode) {
-      this.stdin.setRawMode(true)
+      try {
+        this.stdin.setRawMode(true)
+        rawModeEnabled = true
+      } catch (error) {
+        if (!isUnsupportedRawModeError(error)) {
+          throw error
+        }
+      }
+    }
+
+    if (!rawModeEnabled && isDenoRuntime()) {
+      const deno = getDenoGlobal() as { stdin?: { setRaw?: (mode: boolean, options?: { cbreak?: boolean }) => void } }
+      if (deno.stdin?.setRaw) {
+        try {
+          deno.stdin.setRaw(true, { cbreak: true })
+          rawModeEnabled = true
+        } catch (error) {
+          if (!isUnsupportedRawModeError(error)) {
+            throw error
+          }
+        }
+      }
+    }
+
+    if (!rawModeEnabled) {
+      this._useMouse = false
+      this.lib.setKittyKeyboardFlags(this.rendererPtr, 0)
     }
 
     this.stdin.resume()
