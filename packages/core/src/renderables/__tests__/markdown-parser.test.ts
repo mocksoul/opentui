@@ -45,7 +45,7 @@ test("handles empty content", () => {
   const state = parseMarkdownIncremental("", null)
 
   expect(state.content).toBe("")
-  expect(state.tokens).toEqual([])
+  expect(state.tokens.length).toBe(0)
 })
 
 test("handles empty previous state", () => {

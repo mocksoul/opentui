@@ -1,0 +1,15 @@
+{
+  "imports": {
+    "#test-runtime": "./src/testing/test-runtime.deno.ts",
+    "bun:test": "./src/testing/test-runtime.deno.ts",
+    "events": "node:events",
+    "fs": "node:fs",
+    "fs/promises": "node:fs/promises",
+    "os": "node:os",
+    "path": "node:path",
+    "stream": "node:stream",
+    "tty": "node:tty",
+    "url": "node:url",
+    "util": "node:util"
+  }
+}

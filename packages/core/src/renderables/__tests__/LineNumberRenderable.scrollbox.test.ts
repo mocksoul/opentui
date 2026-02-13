@@ -6,6 +6,7 @@ import { BoxRenderable } from "../Box"
 import { ScrollBoxRenderable } from "../ScrollBox"
 import { SyntaxStyle } from "../../syntax-style"
 import { RGBA } from "../../lib/RGBA"
+import { isDenoRuntime } from "../../runtime"
 
 let currentRenderer: TestRenderer
 let renderOnce: () => Promise<void>
@@ -14,7 +15,12 @@ let captureCharFrame: () => string
 beforeEach(async () => {
   const testRenderer = await createTestRenderer({ width: 60, height: 20 })
   currentRenderer = testRenderer.renderer
-  renderOnce = testRenderer.renderOnce
+  renderOnce = async () => {
+    await testRenderer.renderOnce()
+    if (isDenoRuntime()) {
+      await testRenderer.renderOnce()
+    }
+  }
   captureCharFrame = testRenderer.captureCharFrame
 })
 

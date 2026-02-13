@@ -60,6 +60,7 @@ export class TreeSitterClient extends EventEmitter<TreeSitterClientEvents> {
   private worker: Worker | undefined
   private buffers: Map<number, BufferState> = new Map()
   private initializePromise: Promise<void> | undefined
+  private workerStartError: Error | undefined
   private initializeResolvers:
     | { resolve: () => void; reject: (error: Error) => void; timeoutId: ReturnType<typeof setTimeout> }
     | undefined
@@ -93,6 +94,8 @@ export class TreeSitterClient extends EventEmitter<TreeSitterClientEvents> {
       return
     }
 
+    this.workerStartError = undefined
+
     let worker_path: string | URL
 
     if (env.OTUI_TREE_SITTER_WORKER_PATH) {
@@ -105,6 +108,18 @@ export class TreeSitterClient extends EventEmitter<TreeSitterClientEvents> {
       worker_path = new URL("./parser.worker.js", import.meta.url).href
       if (!existsSync(fileURLToPath(new URL("./parser.worker.js", import.meta.url).toString()))) {
         worker_path = new URL("./parser.worker.ts", import.meta.url).href
+      }
+    }
+
+    if (isDenoRuntime() && typeof worker_path === "string" && !isUrl(worker_path) && !isAbsolute(worker_path)) {
+      worker_path = new URL(worker_path, import.meta.url).href
+    }
+
+    if (isDenoRuntime() && typeof worker_path === "string" && worker_path.startsWith("file:")) {
+      const localWorkerPath = fileURLToPath(worker_path)
+      if (!existsSync(localWorkerPath)) {
+        this.workerStartError = new Error(`Worker error: Module not found \"${worker_path}\"`)
+        return
       }
     }
 
@@ -150,6 +165,10 @@ export class TreeSitterClient extends EventEmitter<TreeSitterClientEvents> {
   async initialize(): Promise<void> {
     if (this.initializePromise) {
       return this.initializePromise
+    }
+
+    if (this.workerStartError) {
+      return Promise.reject(this.workerStartError)
     }
 
     this.initializePromise = new Promise((resolve, reject) => {

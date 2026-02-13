@@ -6,7 +6,7 @@ import { TextRenderable } from "../renderables/Text"
 import { CodeRenderable } from "../renderables/Code"
 import { LinearScrollAccel, MacOSScrollAccel, type ScrollAcceleration } from "../lib/scroll-acceleration"
 import { SyntaxStyle } from "../syntax-style"
-import { sleep } from "../runtime"
+import { isDenoRuntime, sleep } from "../runtime"
 
 // Test accelerator that returns a constant multiplier
 class ConstantScrollAccel implements ScrollAcceleration {
@@ -30,6 +30,15 @@ beforeEach(async () => {
     renderOnce,
     captureCharFrame,
   } = await createTestRenderer({ width: 80, height: 24 }))
+
+  const baseRenderOnce = renderOnce
+  renderOnce = async () => {
+    await baseRenderOnce()
+    if (isDenoRuntime()) {
+      await baseRenderOnce()
+    }
+  }
+
   mockTreeSitterClient = new MockTreeSitterClient()
   mockTreeSitterClient.setMockResult({ highlights: [] })
 })

@@ -2,19 +2,13 @@
 
 import { AsyncLocalStorage } from "node:async_hooks"
 import { basename, dirname, join } from "node:path"
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe as bddDescribe,
-  it as bddIt,
-  test as bddTest,
-} from "jsr:@std/testing/bdd"
 import { expect, fn } from "jsr:@std/expect"
 import { fromFileUrl } from "jsr:@std/path/from-file-url"
 
 type AnyFunction = (...args: any[]) => any
+
+type Hook = (context: Deno.TestContext) => unknown | Promise<unknown>
+type TestCallback = (context: Deno.TestContext) => unknown | Promise<unknown>
 
 type MockFunction<T extends AnyFunction = AnyFunction> = T & {
   mockClear: () => void
@@ -28,60 +22,245 @@ type CurrentTestState = {
   snapshotCallCounts: Map<string, number>
 }
 
+type TestMode = {
+  skip?: boolean
+  only?: boolean
+}
+
+type Suite = {
+  name: string
+  parent: Suite | null
+  skip: boolean
+  only: boolean
+  beforeAllHooks: Hook[]
+  afterAllHooks: Hook[]
+  beforeEachHooks: Hook[]
+  afterEachHooks: Hook[]
+  beforeAllRan: boolean
+  afterAllRan: boolean
+  remainingTests: number
+}
+
+type TestApi = ((...args: any[]) => void) & {
+  only: (...args: any[]) => void
+  skip: (...args: any[]) => void
+  each: (cases: readonly unknown[]) => (name: string, callback: (...args: any[]) => unknown) => void
+}
+
+const rootSuite: Suite = createSuite("", null, false, false)
+let currentSuite = rootSuite
+
 const testStateStore = new AsyncLocalStorage<CurrentTestState>()
-const describeStack: string[] = []
 const snapshotCache = new Map<string, Map<string, string>>()
+
+function createSuite(name: string, parent: Suite | null, skip: boolean, only: boolean): Suite {
+  return {
+    name,
+    parent,
+    skip,
+    only,
+    beforeAllHooks: [],
+    afterAllHooks: [],
+    beforeEachHooks: [],
+    afterEachHooks: [],
+    beforeAllRan: false,
+    afterAllRan: false,
+    remainingTests: 0,
+  }
+}
 
 function normalizeNamePart(value: string): string {
   return value.replace(/\s+/g, " ").trim()
 }
 
-function getFullTestName(name: string): string {
-  return [...describeStack, normalizeNamePart(name)].join(" ").trim()
+function getSuiteChain(suite: Suite): Suite[] {
+  const chain: Suite[] = []
+  let cursor: Suite | null = suite
+  while (cursor) {
+    chain.push(cursor)
+    cursor = cursor.parent
+  }
+  chain.reverse()
+  return chain
 }
 
-function withDescribeScope(name: string, fn: () => void): void {
-  describeStack.push(normalizeNamePart(name))
+function getFullTestName(suiteChain: Suite[], testName: string): string {
+  const parts = suiteChain
+    .map((suite) => suite.name)
+    .filter((value) => value.length > 0)
+    .concat(normalizeNamePart(testName))
+
+  return parts.join(" ").trim()
+}
+
+function registerDescribe(name: string, callback: () => void, mode: TestMode): void {
+  const suiteName = normalizeNamePart(name)
+  const suite = createSuite(
+    suiteName,
+    currentSuite,
+    currentSuite.skip || mode.skip === true,
+    currentSuite.only || mode.only === true,
+  )
+
+  const previous = currentSuite
+  currentSuite = suite
   try {
-    fn()
+    callback()
   } finally {
-    describeStack.pop()
+    currentSuite = previous
   }
 }
 
-function wrapDescribe(base: (...args: any[]) => void): (...args: any[]) => void {
-  return (...args: any[]): void => {
-    if (typeof args[0] === "string" && typeof args[1] === "function") {
-      const [name, callback] = args as [string, () => void]
-      base(name, () => withDescribeScope(name, callback))
-      return
+function parseTestArgs(args: any[]): { name: string; callback: TestCallback; mode: TestMode } {
+  if (typeof args[0] !== "string") {
+    throw new TypeError("test/it expects a string name as the first argument")
+  }
+
+  const name = args[0]
+
+  if (typeof args[1] === "function") {
+    return { name, callback: args[1] as TestCallback, mode: {} }
+  }
+
+  if (args[1] && typeof args[1] === "object" && typeof args[2] === "function") {
+    const options = args[1] as { ignore?: boolean; skip?: boolean; only?: boolean }
+    return {
+      name,
+      callback: args[2] as TestCallback,
+      mode: {
+        skip: options.ignore === true || options.skip === true,
+        only: options.only === true,
+      },
     }
-
-    base(...args)
   }
+
+  throw new TypeError("Unsupported test signature")
 }
 
-function wrapTest(base: (...args: any[]) => void): (...args: any[]) => void {
-  return (...args: any[]): void => {
-    if (typeof args[0] === "string" && typeof args[args.length - 1] === "function") {
-      const testName = normalizeNamePart(args[0])
-      const callbackIndex = args.length - 1
-      const callback = args[callbackIndex] as (t: Deno.TestContext) => unknown
-      const fullName = getFullTestName(testName)
+function registerTestCase(name: string, callback: TestCallback, mode: TestMode): void {
+  const suiteChain = getSuiteChain(currentSuite)
+  const fullName = getFullTestName(suiteChain, name)
 
-      args[callbackIndex] = (t: Deno.TestContext) => {
-        return testStateStore.run(
-          {
-            context: t,
-            fullName,
-            snapshotCallCounts: new Map(),
-          },
-          () => callback(t),
-        )
+  const ignore = currentSuite.skip || mode.skip === true
+  const only = !ignore && (currentSuite.only || mode.only === true)
+
+  if (!ignore) {
+    for (const suite of suiteChain) {
+      suite.remainingTests += 1
+    }
+  }
+
+  Deno.test({
+    name: fullName,
+    ignore,
+    only,
+    sanitizeOps: false,
+    sanitizeResources: false,
+    sanitizeExit: false,
+    fn: async (context) => {
+      await runRegisteredTest(context, fullName, suiteChain, callback)
+    },
+  })
+}
+
+async function runRegisteredTest(
+  context: Deno.TestContext,
+  fullName: string,
+  suiteChain: Suite[],
+  callback: TestCallback,
+): Promise<void> {
+  let firstError: unknown = null
+  let beforeEachCompleted = false
+
+  try {
+    await runBeforeAllHooks(suiteChain, context)
+    await runBeforeEachHooks(suiteChain, context)
+    beforeEachCompleted = true
+
+    await testStateStore.run(
+      {
+        context,
+        fullName,
+        snapshotCallCounts: new Map(),
+      },
+      async () => {
+        await callback(context)
+      },
+    )
+  } catch (error) {
+    firstError = error
+  } finally {
+    if (beforeEachCompleted) {
+      try {
+        await runAfterEachHooks(suiteChain, context)
+      } catch (error) {
+        if (firstError === null) {
+          firstError = error
+        }
       }
     }
 
-    base(...args)
+    for (const suite of suiteChain) {
+      if (suite.remainingTests > 0) {
+        suite.remainingTests -= 1
+      }
+    }
+
+    try {
+      await runAfterAllHooks(suiteChain, context)
+    } catch (error) {
+      if (firstError === null) {
+        firstError = error
+      }
+    }
+  }
+
+  if (firstError !== null) {
+    throw firstError
+  }
+}
+
+async function runBeforeAllHooks(suiteChain: Suite[], context: Deno.TestContext): Promise<void> {
+  for (const suite of suiteChain) {
+    if (suite.beforeAllRan) {
+      continue
+    }
+
+    suite.beforeAllRan = true
+    for (const hook of suite.beforeAllHooks) {
+      await hook(context)
+    }
+  }
+}
+
+async function runBeforeEachHooks(suiteChain: Suite[], context: Deno.TestContext): Promise<void> {
+  for (const suite of suiteChain) {
+    for (const hook of suite.beforeEachHooks) {
+      await hook(context)
+    }
+  }
+}
+
+async function runAfterEachHooks(suiteChain: Suite[], context: Deno.TestContext): Promise<void> {
+  for (let i = suiteChain.length - 1; i >= 0; i -= 1) {
+    const suite = suiteChain[i]
+    for (const hook of suite.afterEachHooks) {
+      await hook(context)
+    }
+  }
+}
+
+async function runAfterAllHooks(suiteChain: Suite[], context: Deno.TestContext): Promise<void> {
+  for (let i = suiteChain.length - 1; i >= 0; i -= 1) {
+    const suite = suiteChain[i]
+    if (suite.afterAllRan || !suite.beforeAllRan || suite.remainingTests !== 0) {
+      continue
+    }
+
+    suite.afterAllRan = true
+    for (const hook of suite.afterAllHooks) {
+      await hook(context)
+    }
   }
 }
 
@@ -112,40 +291,80 @@ function formatValue(value: unknown): string {
   }
 }
 
-type TestApi = ((...args: any[]) => void) & {
-  only: (...args: any[]) => void
-  skip: (...args: any[]) => void
-  each: (cases: readonly unknown[]) => (name: string, callback: (...args: any[]) => unknown) => void
-}
+function createTestApi(baseMode: TestMode): TestApi {
+  const registerFromArgs = (...args: any[]): void => {
+    const parsed = parseTestArgs(args)
+    registerTestCase(parsed.name, parsed.callback, {
+      skip: baseMode.skip === true || parsed.mode.skip === true,
+      only: baseMode.only === true || parsed.mode.only === true,
+    })
+  }
 
-function createTestApi(
-  base: (...args: any[]) => void,
-  only: (...args: any[]) => void,
-  skip: (...args: any[]) => void,
-): TestApi {
-  const wrapped = wrapTest(base) as TestApi
-  wrapped.only = wrapTest(only)
-  wrapped.skip = wrapTest(skip)
+  const wrapped = ((...args: any[]): void => {
+    registerFromArgs(...args)
+  }) as TestApi
+
+  wrapped.only = (...args: any[]): void => {
+    const parsed = parseTestArgs(args)
+    registerTestCase(parsed.name, parsed.callback, {
+      skip: baseMode.skip === true || parsed.mode.skip === true,
+      only: true,
+    })
+  }
+
+  wrapped.skip = (...args: any[]): void => {
+    const parsed = parseTestArgs(args)
+    registerTestCase(parsed.name, parsed.callback, {
+      skip: true,
+      only: baseMode.only === true || parsed.mode.only === true,
+    })
+  }
+
   wrapped.each = (cases: readonly unknown[]) => {
     return (name: string, callback: (...args: any[]) => unknown): void => {
       cases.forEach((entry, index) => {
         const args = Array.isArray(entry) ? entry : [entry]
-        wrapped(formatEachName(name, args, index), () => callback(...args))
+        registerFromArgs(formatEachName(name, args, index), () => callback(...args))
       })
     }
   }
+
   return wrapped
 }
 
-export const describe = wrapDescribe(bddDescribe) as ((...args: any[]) => void) & {
-  only: (...args: any[]) => void
-  skip: (...args: any[]) => void
+export const describe = ((name: string, callback: () => void): void => {
+  registerDescribe(name, callback, {})
+}) as ((name: string, callback: () => void) => void) & {
+  only: (name: string, callback: () => void) => void
+  skip: (name: string, callback: () => void) => void
 }
-describe.only = wrapDescribe((bddDescribe as any).only)
-describe.skip = wrapDescribe((bddDescribe as any).skip)
 
-export const test = createTestApi(bddTest as any, (bddTest as any).only, (bddTest as any).skip)
-export const it = createTestApi(bddIt as any, (bddIt as any).only, (bddIt as any).skip)
+describe.only = (name: string, callback: () => void): void => {
+  registerDescribe(name, callback, { only: true })
+}
+
+describe.skip = (name: string, callback: () => void): void => {
+  registerDescribe(name, callback, { skip: true })
+}
+
+export const test = createTestApi({})
+export const it = createTestApi({})
+
+export function beforeAll(hook: Hook): void {
+  currentSuite.beforeAllHooks.push(hook)
+}
+
+export function afterAll(hook: Hook): void {
+  currentSuite.afterAllHooks.push(hook)
+}
+
+export function beforeEach(hook: Hook): void {
+  currentSuite.beforeEachHooks.push(hook)
+}
+
+export function afterEach(hook: Hook): void {
+  currentSuite.afterEachHooks.push(hook)
+}
 
 function resolveCurrentTestFilePath(origin: string): string {
   try {
@@ -164,6 +383,11 @@ function normalizeTemplateLiteralContent(value: string): string {
     out = out.slice(0, -1)
   }
   return out
+}
+
+function evaluateTemplateLiteral(value: string): string {
+  const escaped = value.replace(/`/g, "\\`").replace(/\$\{/g, "\\${")
+  return new Function(`return \`${escaped}\``)() as string
 }
 
 function normalizeInlineSnapshot(value: string): string {
@@ -185,6 +409,18 @@ function serializeSnapshotValue(value: unknown): string {
   } catch {
     return String(value)
   }
+}
+
+function serializeInlineSnapshotValue(value: unknown): string {
+  if (typeof value === "string") {
+    if (value.includes("\n")) {
+      return `"${value}"\n`
+    }
+
+    return `"${value}"`
+  }
+
+  return serializeSnapshotValue(value)
 }
 
 function getSnapshotEntriesForFile(testFilePath: string): Map<string, string> {
@@ -212,7 +448,7 @@ function getSnapshotEntriesForFile(testFilePath: string): Map<string, string> {
     const key = match[1]?.replace(/\\`/g, "`")
     const rawValue = match[2]
     if (key !== undefined && rawValue !== undefined) {
-      snapshots.set(key, normalizeTemplateLiteralContent(rawValue))
+      snapshots.set(key, normalizeTemplateLiteralContent(evaluateTemplateLiteral(rawValue)))
     }
   }
 
@@ -253,7 +489,7 @@ expect.extend({
       }
     }
 
-    const received = serializeSnapshotValue(context.value)
+    const received = serializeInlineSnapshotValue(context.value)
     const expected = normalizeInlineSnapshot(inlineSnapshot)
     const pass = received === expected
 
@@ -350,7 +586,7 @@ export function spyOn<T extends object, K extends keyof T>(target: T, methodName
 
   const originalFn = original as unknown as AnyFunction
   const spy = createMockFunction(function (this: unknown, ...args: unknown[]) {
-    return originalFn.apply(this, args)
+    return originalFn.apply(target, args)
   })
 
   ;(target as Record<PropertyKey, unknown>)[methodName as PropertyKey] = spy as unknown as T[K]
@@ -361,4 +597,4 @@ export function spyOn<T extends object, K extends keyof T>(target: T, methodName
   return spy
 }
 
-export { afterAll, afterEach, beforeAll, beforeEach, expect }
+export { expect }

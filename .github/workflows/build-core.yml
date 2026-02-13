@@ -21,6 +21,11 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
       - name: Setup Zig
         uses: goto-bus-stop/setup-zig@v2
         with:
@@ -95,6 +100,11 @@ jobs:
         run: |
           cd packages/core
           bun run test:js
+
+      - name: Run Deno tests
+        run: |
+          cd packages/core
+          bun run test:deno
 
   # Gate job for branch protection
   build-complete:

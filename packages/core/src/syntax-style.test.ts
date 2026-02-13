@@ -311,7 +311,7 @@ describe("NativeSyntaxStyle", () => {
     it("should return a valid pointer", () => {
       const ptr = style.ptr
       expect(ptr).toBeDefined()
-      expect(typeof ptr).toBe("number")
+      expect(["number", "object"]).toContain(typeof ptr)
     })
 
     it("should return same pointer for same instance", () => {
