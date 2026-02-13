@@ -2,8 +2,8 @@ import { CliRenderer, createCliRenderer } from "../renderer"
 import { TextareaRenderable } from "../renderables/Textarea"
 import { BoxRenderable } from "../renderables/Box"
 import { TextRenderable } from "../renderables/Text"
-import { KeyEvent } from "../lib/KeyHandler"
-import { type ExtmarksController, type ExtmarkDeletedEvent } from "../lib/extmarks"
+import { type KeyEvent } from "../lib/KeyHandler"
+import { type ExtmarksController } from "../lib/extmarks"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 import { SyntaxStyle } from "../syntax-style"
 import { RGBA } from "../lib/RGBA"
@@ -33,7 +33,8 @@ let statusText: TextRenderable | null = null
 let helpText: TextRenderable | null = null
 let extmarksController: ExtmarksController | null = null
 let syntaxStyle: SyntaxStyle | null = null
-let virtualStyleId: number = 0
+let virtualStyleId: number | null = null
+let lastVirtualExtmarkCount = 0
 
 export async function run(rendererInstance: CliRenderer): Promise<void> {
   renderer = rendererInstance
@@ -75,7 +76,7 @@ export async function run(rendererInstance: CliRenderer): Promise<void> {
     wrapMode: "word",
     showCursor: true,
     cursorColor: "#4ECDC4",
-    syntaxStyle,
+    syntaxStyle: syntaxStyle ?? undefined,
   })
   editorBox.add(editor)
 
@@ -85,13 +86,7 @@ export async function run(rendererInstance: CliRenderer): Promise<void> {
   }
 
   findAndMarkVirtualRanges()
-
-  extmarksController.on("extmark-deleted", (event: ExtmarkDeletedEvent) => {
-    if (helpText) {
-      const extmark = event.extmark
-      helpText.content = `Deleted extmark at ${extmark.start}-${extmark.end} via ${event.trigger}`
-    }
-  })
+  lastVirtualExtmarkCount = extmarksController.getVirtual().length
 
   helpText = new TextRenderable(renderer, {
     id: "help",
@@ -119,6 +114,11 @@ export async function run(rendererInstance: CliRenderer): Promise<void> {
         const extmarksAtCursor = extmarksController.getAtOffset(offset)
         const virtualCount = extmarksController.getVirtual().length
 
+        if (helpText && virtualCount < lastVirtualExtmarkCount) {
+          helpText.content = `Deleted ${lastVirtualExtmarkCount - virtualCount} virtual marker(s).`
+        }
+        lastVirtualExtmarkCount = virtualCount
+
         let extmarkInfo = ""
         if (extmarksAtCursor.length > 0) {
           extmarkInfo = ` | Inside extmark(s): ${extmarksAtCursor.length}`
@@ -143,13 +143,14 @@ export async function run(rendererInstance: CliRenderer): Promise<void> {
           start: offset,
           end: offset + markerText.length,
           virtual: true,
-          styleId: virtualStyleId,
+          ...(virtualStyleId !== null ? { styleId: virtualStyleId } : {}),
           data: { type: "marker", added: "manual" },
         })
 
         if (helpText) {
           helpText.content = `Added virtual marker at offset ${offset}!`
         }
+        lastVirtualExtmarkCount = extmarksController.getVirtual().length
       }
     }
   })
@@ -170,7 +171,7 @@ function findAndMarkVirtualRanges(): void {
       start,
       end,
       virtual: true,
-      styleId: virtualStyleId,
+      ...(virtualStyleId !== null ? { styleId: virtualStyleId } : {}),
       data: { type: "auto-detected", content: match[0] },
     })
   }
@@ -182,12 +183,14 @@ export function destroy(rendererInstance: CliRenderer): void {
   extmarksController = null
   syntaxStyle?.destroy()
   syntaxStyle = null
+  virtualStyleId = null
   parentContainer?.destroy()
   parentContainer = null
   editor = null
   statusText = null
   helpText = null
   renderer = null
+  lastVirtualExtmarkCount = 0
 }
 
 if (import.meta.main) {

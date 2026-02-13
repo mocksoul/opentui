@@ -4,6 +4,7 @@ import { createTestRenderer, type TestRenderer, type MockInput } from "../testin
 import { type ExtmarksController } from "./extmarks"
 import { SyntaxStyle } from "../syntax-style"
 import { RGBA } from "./RGBA"
+import { stringWidth } from "../runtime"
 
 let currentRenderer: TestRenderer
 let renderOnce: () => Promise<void>
@@ -64,12 +65,12 @@ describe("ExtmarksController - Multi-width Graphemes", () => {
         if (text[i] === "\n") {
           displayOffset += 1
         } else {
-          displayOffset += Bun.stringWidth(text[i])
+          displayOffset += stringWidth(text[i])
         }
       }
 
       const mentionText = "@git-committer"
-      const mentionDisplayWidth = Bun.stringWidth(mentionText)
+      const mentionDisplayWidth = stringWidth(mentionText)
       const mentionStart = displayOffset // Should be 11
       const mentionEnd = displayOffset + mentionDisplayWidth // Should be 25
 
