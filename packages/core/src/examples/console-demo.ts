@@ -1,16 +1,11 @@
 #!/usr/bin/env bun
 
-import {
-  CliRenderer,
-  createCliRenderer,
-  RGBA,
-  TextAttributes,
-  TextRenderable,
-  BoxRenderable,
-  type MouseEvent,
-  OptimizedBuffer,
-  type RenderContext,
-} from "../index"
+import { CliRenderer, createCliRenderer, type MouseEvent } from "../renderer"
+import { BoxRenderable } from "../renderables/Box"
+import { TextRenderable } from "../renderables/Text"
+import { RGBA } from "../lib/RGBA"
+import { TextAttributes, type RenderContext } from "../types"
+import { OptimizedBuffer } from "../buffer"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 
 let titleText: TextRenderable | null = null

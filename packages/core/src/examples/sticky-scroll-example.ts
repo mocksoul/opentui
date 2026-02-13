@@ -1,4 +1,7 @@
-import { BoxRenderable, type CliRenderer, createCliRenderer, TextRenderable, t, fg, bold } from "../index"
+import { type CliRenderer, createCliRenderer } from "../renderer"
+import { BoxRenderable } from "../renderables/Box"
+import { TextRenderable } from "../renderables/Text"
+import { t, fg, bold } from "../lib/styled-text"
 import { ScrollBoxRenderable } from "../renderables/ScrollBox"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 

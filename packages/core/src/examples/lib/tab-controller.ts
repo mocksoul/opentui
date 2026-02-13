@@ -1,8 +1,8 @@
 import { Renderable, type RenderableOptions, RenderableEvents } from "../../Renderable"
 import { OptimizedBuffer } from "../../buffer"
-import { BoxRenderable } from "../../renderables"
-import { TabSelectRenderable, TabSelectRenderableEvents } from "../../renderables/TabSelect"
-import type { CliRenderer, TabSelectOption } from "../../index"
+import { BoxRenderable } from "../../renderables/Box"
+import { TabSelectRenderable, TabSelectRenderableEvents, type TabSelectOption } from "../../renderables/TabSelect"
+import type { CliRenderer } from "../../renderer"
 import { parseColor, type ColorInput } from "../../lib/RGBA"
 
 export interface TabObject {

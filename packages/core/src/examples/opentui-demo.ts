@@ -1,15 +1,10 @@
-import {
-  TextAttributes,
-  rgbToHex,
-  hsvToRgb,
-  createCliRenderer,
-  TextRenderable,
-  BoxRenderable,
-  parseColor,
-  getBorderFromSides,
-  type KeyEvent,
-} from "../index"
-import type { BorderCharacters, BorderSidesConfig, CliRenderer } from "../index"
+import { createCliRenderer, type CliRenderer } from "../renderer"
+import { BoxRenderable } from "../renderables/Box"
+import { TextRenderable } from "../renderables/Text"
+import { RGBA, rgbToHex, hsvToRgb, parseColor } from "../lib/RGBA"
+import { getBorderFromSides, type BorderCharacters, type BorderSidesConfig } from "../lib/border"
+import { type KeyEvent } from "../lib/KeyHandler"
+import { TextAttributes } from "../types"
 import { TabControllerRenderable } from "./lib/tab-controller"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 

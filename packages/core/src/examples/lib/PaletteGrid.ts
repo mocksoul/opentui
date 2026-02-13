@@ -2,7 +2,7 @@ import type { RenderableOptions } from "../../Renderable"
 import { RGBA } from "../../lib/RGBA"
 import { FrameBufferRenderable, type FrameBufferOptions } from "../../renderables/FrameBuffer"
 import type { RenderContext } from "../../types"
-import { TextAttributes } from "../../index"
+import { TextAttributes } from "../../types"
 
 export interface PaletteGridOptions extends Omit<RenderableOptions<PaletteGridRenderable>, "width" | "height"> {
   colors: string[]

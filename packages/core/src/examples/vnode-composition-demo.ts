@@ -1,20 +1,11 @@
 import { createCliRenderer, MouseEvent, type CliRenderer } from "../renderer"
-import {
-  Box,
-  Text,
-  Generic,
-  type VNode,
-  instantiate,
-  delegate,
-  Input,
-  BoxRenderable,
-  type BoxOptions,
-  vstyles,
-} from "../renderables"
+import { Box, Text, Generic, Input, vstyles } from "../renderables/composition/constructs"
+import { type VNode, instantiate, delegate } from "../renderables/composition/vnode"
+import { BoxRenderable, type BoxOptions } from "../renderables/Box"
 import type { RenderContext } from "../types"
 import type { OptimizedBuffer } from "../buffer"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
-import { RGBA, parseColor } from "../lib"
+import { RGBA, parseColor } from "../lib/RGBA"
 import type { Renderable } from "../Renderable"
 import { TextAttributes } from "../types"
 

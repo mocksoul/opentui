@@ -1,5 +1,8 @@
 import { createTimeline, type JSAnimation, Timeline } from "../animation/Timeline"
-import { CliRenderer, createCliRenderer, TextRenderable, BoxRenderable, type KeyEvent } from "../index"
+import { type KeyEvent } from "../lib/KeyHandler"
+import { createCliRenderer, type CliRenderer } from "../renderer"
+import { BoxRenderable } from "../renderables/Box"
+import { TextRenderable } from "../renderables/Text"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 
 class TimelineExample {

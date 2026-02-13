@@ -1,78 +1,27 @@
 #!/usr/bin/env bun
 
-import {
-  CliRenderer,
-  createCliRenderer,
-  TextRenderable,
-  FrameBufferRenderable,
-  RGBA,
-  SelectRenderable,
-  SelectRenderableEvents,
-  BoxRenderable,
-  TextareaRenderable,
-  type SelectOption,
-  type KeyEvent,
-  type ThemeMode,
-  ASCIIFontRenderable,
-} from "../index"
+import { type KeyEvent } from "../lib/KeyHandler"
+import { RGBA } from "../lib/RGBA"
+import { type ThemeMode } from "../types"
+import { createCliRenderer, type CliRenderer } from "../renderer"
+import { BoxRenderable } from "../renderables/Box"
+import { TextRenderable } from "../renderables/Text"
+import { TextareaRenderable } from "../renderables/Textarea"
+import { SelectRenderable, SelectRenderableEvents, type SelectOption } from "../renderables/Select"
+import { FrameBufferRenderable } from "../renderables/FrameBuffer"
+import { ASCIIFontRenderable } from "../renderables/ASCIIFont"
 import { measureText } from "../lib/ascii.font"
-import * as goldenStarDemo from "./golden-star-demo"
-import * as boxExample from "./fonts"
-import * as fractalShaderExample from "./fractal-shader-demo"
-import * as framebufferExample from "./framebuffer-demo"
-import * as lightsPhongExample from "./lights-phong-demo"
-import * as physxPlanckExample from "./physx-planck-2d-demo"
-import * as physxRapierExample from "./physx-rapier-2d-demo"
-import * as opentuiDemo from "./opentui-demo"
-import * as nestedZIndexDemo from "./nested-zindex-demo"
-import * as relativePositioningDemo from "./relative-positioning-demo"
-import * as transparencyDemo from "./transparency-demo"
-import * as draggableThreeDemo from "./draggable-three-demo"
-import * as scrollExample from "./scroll-example"
-import * as stickyScrollExample from "./sticky-scroll-example"
-import * as shaderCubeExample from "./shader-cube-demo"
-import * as spriteAnimationExample from "./sprite-animation-demo"
-import * as spriteParticleExample from "./sprite-particle-generator-demo"
-import * as staticSpriteExample from "./static-sprite-demo"
-import * as textureLoadingExample from "./texture-loading-demo"
-import * as timelineExample from "./timeline-example"
-import * as tabSelectExample from "./tab-select-demo"
-import * as selectExample from "./select-demo"
-import * as inputExample from "./input-demo"
-import * as layoutExample from "./simple-layout-example"
-import * as inputSelectLayoutExample from "./input-select-layout-demo"
-import * as styledTextExample from "./styled-text-demo"
-import * as mouseInteractionExample from "./mouse-interaction-demo"
-import * as textSelectionExample from "./text-selection-demo"
-import * as asciiFontSelectionExample from "./ascii-font-selection-demo"
-import * as splitModeExample from "./split-mode-demo"
-import * as consoleExample from "./console-demo"
-import * as vnodeCompositionDemo from "./vnode-composition-demo"
-import * as hastSyntaxHighlightingExample from "./hast-syntax-highlighting-demo"
-import * as codeDemo from "./code-demo"
-import * as liveStateExample from "./live-state-demo"
-import * as fullUnicodeExample from "./full-unicode-demo"
-import * as textNodeDemo from "./text-node-demo"
-import * as textWrapExample from "./text-wrap"
-import * as editorDemo from "./editor-demo"
-import * as sliderDemo from "./slider-demo"
-import * as terminalDemo from "./terminal"
-import * as diffDemo from "./diff-demo"
-import * as keypressDebugDemo from "./keypress-debug-demo"
-import * as extmarksDemo from "./extmarks-demo"
-import * as markdownDemo from "./markdown-demo"
-import * as linkDemo from "./link-demo"
-import * as opacityExample from "./opacity-example"
-import * as scrollboxOverlayHitTest from "./scrollbox-overlay-hit-test"
-import * as scrollboxMouseTest from "./scrollbox-mouse-test"
-import * as textTruncationDemo from "./text-truncation-demo"
-import * as grayscaleBufferDemo from "./grayscale-buffer-demo"
-import * as focusRestoreDemo from "./focus-restore-demo"
+import { isDenoRuntime } from "../runtime"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 
 interface Example {
   name: string
   description: string
+  modulePath: string
+  is3d?: boolean
+}
+
+interface ExampleModule {
   run?: (renderer: CliRenderer) => void
   destroy?: (renderer: CliRenderer) => void
 }
@@ -131,343 +80,261 @@ const MENU_THEMES: Record<ThemeMode, ExampleTheme> = {
   },
 }
 
+const isDeno = isDenoRuntime()
+
 const examples: Example[] = [
   {
     name: "Golden Star Demo",
     description: "3D golden star with particle effects and animated text celebrating 5000 stars",
-    run: goldenStarDemo.run,
-    destroy: goldenStarDemo.destroy,
+    modulePath: "./golden-star-demo",
+    is3d: true,
   },
   {
     name: "Mouse Interaction Demo",
     description: "Interactive mouse trails and clickable cells demonstration",
-    run: mouseInteractionExample.run,
-    destroy: mouseInteractionExample.destroy,
+    modulePath: "./mouse-interaction-demo",
   },
   {
     name: "Text Selection Demo",
     description: "Text selection across multiple renderables with mouse drag",
-    run: textSelectionExample.run,
-    destroy: textSelectionExample.destroy,
+    modulePath: "./text-selection-demo",
   },
   {
     name: "Text Truncation Demo",
     description: "Middle truncation with ellipsis - toggle with 'T' key and resize to test responsive behavior",
-    run: textTruncationDemo.run,
-    destroy: textTruncationDemo.destroy,
+    modulePath: "./text-truncation-demo",
   },
   {
     name: "ASCII Font Selection Demo",
     description: "Text selection with ASCII fonts - precise character-level selection across different font types",
-    run: asciiFontSelectionExample.run,
-    destroy: asciiFontSelectionExample.destroy,
+    modulePath: "./ascii-font-selection-demo",
   },
-  {
-    name: "Text Wrap Demo",
-    description: "Text wrapping example",
-    run: textWrapExample.run,
-    destroy: textWrapExample.destroy,
-  },
+  { name: "Text Wrap Demo", description: "Text wrapping example", modulePath: "./text-wrap" },
   {
     name: "Console Demo",
     description: "Interactive console logging with clickable buttons for different log levels",
-    run: consoleExample.run,
-    destroy: consoleExample.destroy,
+    modulePath: "./console-demo",
   },
   {
     name: "Styled Text Demo",
     description: "Template literals with styled text, colors, and formatting",
-    run: styledTextExample.run,
-    destroy: styledTextExample.destroy,
+    modulePath: "./styled-text-demo",
   },
   {
     name: "Link Demo",
     description: "Hyperlink support with OSC 8 - clickable links and link inheritance in styled text",
-    run: linkDemo.run,
-    destroy: linkDemo.destroy,
+    modulePath: "./link-demo",
   },
   {
     name: "Extmarks Demo",
     description: "Virtual extmarks - text ranges that cursor jumps over, like inline tags and links",
-    run: extmarksDemo.run,
-    destroy: extmarksDemo.destroy,
+    modulePath: "./extmarks-demo",
   },
   {
     name: "Opacity Demo",
     description: "Box opacity and transparency effects with animated opacity transitions",
-    run: opacityExample.run,
-    destroy: opacityExample.destroy,
+    modulePath: "./opacity-example",
   },
   {
     name: "TextNode Demo",
     description: "TextNode API for building complex styled text structures",
-    run: textNodeDemo.run,
-    destroy: textNodeDemo.destroy,
+    modulePath: "./text-node-demo",
   },
   {
     name: "HAST Syntax Highlighting Demo",
     description: "Convert HAST trees to syntax-highlighted text with efficient chunk generation",
-    run: hastSyntaxHighlightingExample.run,
-    destroy: hastSyntaxHighlightingExample.destroy,
+    modulePath: "./hast-syntax-highlighting-demo",
   },
   {
     name: "Code Demo",
     description:
       "Code viewer with line numbers, diff highlights, and diagnostics using CodeRenderable + LineNumberRenderable",
-    run: codeDemo.run,
-    destroy: codeDemo.destroy,
+    modulePath: "./code-demo",
   },
   {
     name: "Diff Demo",
     description: "Unified and split diff views with syntax highlighting and multiple themes",
-    run: diffDemo.run,
-    destroy: diffDemo.destroy,
+    modulePath: "./diff-demo",
   },
   {
     name: "Markdown Demo",
     description: "Markdown rendering with table alignment, syntax highlighting, and theme switching",
-    run: markdownDemo.run,
-    destroy: markdownDemo.destroy,
+    modulePath: "./markdown-demo",
   },
   {
     name: "Live State Management Demo",
     description: "Test automatic renderer lifecycle management with live renderables",
-    run: liveStateExample.run,
-    destroy: liveStateExample.destroy,
+    modulePath: "./live-state-demo",
   },
   {
     name: "Layout System Demo",
     description: "Flex layout system with multiple configurations",
-    run: layoutExample.run,
-    destroy: layoutExample.destroy,
+    modulePath: "./simple-layout-example",
   },
   {
     name: "Input & Select Layout Demo",
     description: "Interactive layout with input and select elements",
-    run: inputSelectLayoutExample.run,
-    destroy: inputSelectLayoutExample.destroy,
+    modulePath: "./input-select-layout-demo",
   },
-  {
-    name: "ASCII Font Demo",
-    description: "ASCII font rendering with various colors and text",
-    run: boxExample.run,
-    destroy: boxExample.destroy,
-  },
-  {
-    name: "OpenTUI Demo",
-    description: "Multi-tab demo with various features",
-    run: opentuiDemo.run,
-    destroy: opentuiDemo.destroy,
-  },
+  { name: "ASCII Font Demo", description: "ASCII font rendering with various colors and text", modulePath: "./fonts" },
+  { name: "OpenTUI Demo", description: "Multi-tab demo with various features", modulePath: "./opentui-demo" },
   {
     name: "Nested Z-Index Demo",
     description: "Demonstrates z-index behavior with nested render objects",
-    run: nestedZIndexDemo.run,
-    destroy: nestedZIndexDemo.destroy,
+    modulePath: "./nested-zindex-demo",
   },
   {
     name: "Relative Positioning Demo",
     description: "Shows how child positions are relative to their parent containers",
-    run: relativePositioningDemo.run,
-    destroy: relativePositioningDemo.destroy,
+    modulePath: "./relative-positioning-demo",
   },
   {
     name: "Transparency Demo",
     description: "Alpha blending and transparency effects demonstration",
-    run: transparencyDemo.run,
-    destroy: transparencyDemo.destroy,
+    modulePath: "./transparency-demo",
   },
   {
     name: "Draggable ThreeRenderable",
     description: "Draggable WebGPU cube with live animation",
-    run: draggableThreeDemo.run,
-    destroy: draggableThreeDemo.destroy,
+    modulePath: "./draggable-three-demo",
+    is3d: true,
   },
   {
     name: "Static Sprite",
     description: "Static sprite rendering demo",
-    run: staticSpriteExample.run,
-    destroy: staticSpriteExample.destroy,
+    modulePath: "./static-sprite-demo",
+    is3d: true,
   },
   {
     name: "Sprite Animation",
     description: "Animated sprite sequences",
-    run: spriteAnimationExample.run,
-    destroy: spriteAnimationExample.destroy,
+    modulePath: "./sprite-animation-demo",
+    is3d: true,
   },
   {
     name: "Sprite Particles",
     description: "Particle system with sprites",
-    run: spriteParticleExample.run,
-    destroy: spriteParticleExample.destroy,
+    modulePath: "./sprite-particle-generator-demo",
+    is3d: true,
   },
-  {
-    name: "Framebuffer Demo",
-    description: "Framebuffer rendering techniques",
-    run: framebufferExample.run,
-    destroy: framebufferExample.destroy,
-  },
+  { name: "Framebuffer Demo", description: "Framebuffer rendering techniques", modulePath: "./framebuffer-demo" },
   {
     name: "Texture Loading",
     description: "Loading and displaying textures",
-    run: textureLoadingExample.run,
-    destroy: textureLoadingExample.destroy,
+    modulePath: "./texture-loading-demo",
+    is3d: true,
   },
-  {
-    name: "ScrollBox Demo",
-    description: "Scrollable container with customization",
-    run: scrollExample.run,
-    destroy: scrollExample.destroy,
-  },
+  { name: "ScrollBox Demo", description: "Scrollable container with customization", modulePath: "./scroll-example" },
   {
     name: "Sticky Scroll Demo",
     description: "ScrollBox with sticky scroll behavior - maintains position at borders when content changes",
-    run: stickyScrollExample.run,
-    destroy: stickyScrollExample.destroy,
+    modulePath: "./sticky-scroll-example",
   },
   {
     name: "Scrollbox Mouse Test",
     description: "Test scrollbox mouse hit detection with hover and click events",
-    run: scrollboxMouseTest.run,
-    destroy: scrollboxMouseTest.destroy,
+    modulePath: "./scrollbox-mouse-test",
   },
   {
     name: "Scrollbox Overlay Hit Test",
     description: "Test scrollbox hit detection with overlays and dialogs",
-    run: scrollboxOverlayHitTest.run,
-    destroy: scrollboxOverlayHitTest.destroy,
+    modulePath: "./scrollbox-overlay-hit-test",
   },
-  {
-    name: "Shader Cube",
-    description: "3D cube with custom shaders",
-    run: shaderCubeExample.run,
-    destroy: shaderCubeExample.destroy,
-  },
+  { name: "Shader Cube", description: "3D cube with custom shaders", modulePath: "./shader-cube-demo", is3d: true },
   {
     name: "Fractal Shader",
     description: "Fractal rendering with shaders",
-    run: fractalShaderExample.run,
-    destroy: fractalShaderExample.destroy,
+    modulePath: "./fractal-shader-demo",
+    is3d: true,
   },
-  {
-    name: "Phong Lighting",
-    description: "Phong lighting model demo",
-    run: lightsPhongExample.run,
-    destroy: lightsPhongExample.destroy,
-  },
+  { name: "Phong Lighting", description: "Phong lighting model demo", modulePath: "./lights-phong-demo", is3d: true },
   {
     name: "Physics Planck",
     description: "2D physics with Planck.js",
-    run: physxPlanckExample.run,
-    destroy: physxPlanckExample.destroy,
+    modulePath: "./physx-planck-2d-demo",
+    is3d: true,
   },
-  {
-    name: "Physics Rapier",
-    description: "2D physics with Rapier",
-    run: physxRapierExample.run,
-    destroy: physxRapierExample.destroy,
-  },
-  {
-    name: "Timeline Example",
-    description: "Animation timeline system",
-    run: timelineExample.run,
-    destroy: timelineExample.destroy,
-  },
-  {
-    name: "Tab Select",
-    description: "Tab selection demo",
-    run: tabSelectExample.run,
-    destroy: tabSelectExample.destroy,
-  },
+  { name: "Physics Rapier", description: "2D physics with Rapier", modulePath: "./physx-rapier-2d-demo", is3d: true },
+  { name: "Timeline Example", description: "Animation timeline system", modulePath: "./timeline-example" },
+  { name: "Tab Select", description: "Tab selection demo", modulePath: "./tab-select-demo" },
   {
     name: "Select Demo",
     description: "Interactive SelectElement demo with customizable options",
-    run: selectExample.run,
-    destroy: selectExample.destroy,
+    modulePath: "./select-demo",
   },
   {
     name: "Input Demo",
     description: "Interactive InputElement demo with validation and multiple fields",
-    run: inputExample.run,
-    destroy: inputExample.destroy,
+    modulePath: "./input-demo",
   },
   {
     name: "Terminal Palette Demo",
     description: "Terminal color palette detection and visualization - fetch and display all 256 terminal colors",
-    run: terminalDemo.run,
-    destroy: terminalDemo.destroy,
+    modulePath: "./terminal",
+  },
+  {
+    name: "Terminal Title Demo",
+    description: "Set and cycle terminal window titles using OSC escape sequences",
+    modulePath: "./terminal-title",
   },
   {
     name: "Editor Demo",
     description: "Interactive text editor with TextareaRenderable - supports full editing capabilities",
-    run: editorDemo.run,
-    destroy: editorDemo.destroy,
-  },
-  {
-    name: "Extmarks Demo",
-    description: "Virtual extmarks - text ranges that the cursor jumps over, with deletion handling",
-    run: extmarksDemo.run,
-    destroy: extmarksDemo.destroy,
+    modulePath: "./editor-demo",
   },
   {
     name: "Slider Demo",
     description: "Interactive slider components with various orientations and configurations",
-    run: sliderDemo.run,
-    destroy: sliderDemo.destroy,
+    modulePath: "./slider-demo",
   },
   {
     name: "VNode Composition Demo",
     description: "Declarative Box(Box(Box(children))) composition",
-    run: vnodeCompositionDemo.run,
-    destroy: vnodeCompositionDemo.destroy,
+    modulePath: "./vnode-composition-demo",
   },
   {
     name: "Full Unicode Demo",
     description: "Draggable boxes and background filled with complex graphemes",
-    run: fullUnicodeExample.run,
-    destroy: fullUnicodeExample.destroy,
+    modulePath: "./full-unicode-demo",
   },
   {
     name: "Split Mode Demo (Experimental)",
     description: "Renderer confined to bottom area with normal terminal output above",
-    run: splitModeExample.run,
-    destroy: splitModeExample.destroy,
+    modulePath: "./split-mode-demo",
   },
   {
     name: "Keypress Debug Tool",
     description: "Debug tool to inspect keypress events, raw input, and terminal capabilities",
-    run: keypressDebugDemo.run,
-    destroy: keypressDebugDemo.destroy,
+    modulePath: "./keypress-debug-demo",
   },
   {
     name: "Grayscale Buffer",
     description: "Grayscale buffer rendering with 1x vs 2x supersampled intensity",
-    run: grayscaleBufferDemo.run,
-    destroy: grayscaleBufferDemo.destroy,
+    modulePath: "./grayscale-buffer-demo",
   },
   {
     name: "Focus Restore Demo",
     description: "Test focus restore - alt-tab away and back to verify mouse tracking resumes",
-    run: focusRestoreDemo.run,
-    destroy: focusRestoreDemo.destroy,
+    modulePath: "./focus-restore-demo",
   },
 ]
 
 class ExampleSelector {
   private renderer: CliRenderer
   private currentExample: Example | null = null
+  private currentExampleModule: ExampleModule | null = null
   private inMenu = true
   private themeMode: ThemeMode = DEFAULT_THEME_MODE
 
   private menuContainer: BoxRenderable | null = null
-  private title: FrameBufferRenderable | null = null
+  private title: ASCIIFontRenderable | null = null
   private filterBox: BoxRenderable | null = null
   private filterInput: TextareaRenderable | null = null
   private instructions: TextRenderable | null = null
   private selectElement: SelectRenderable | null = null
   private selectBox: BoxRenderable | null = null
   private notImplementedText: TextRenderable | null = null
-  private allExamples: Example[] = examples
+  private allExamples: Example[] = isDeno ? examples.filter((e) => !e.is3d) : examples
 
   constructor(renderer: CliRenderer) {
     this.renderer = renderer
@@ -570,7 +437,7 @@ class ExampleSelector {
     this.menuContainer.add(this.selectBox)
 
     // Select element
-    const selectOptions: SelectOption[] = examples.map((example) => ({
+    const selectOptions: SelectOption[] = this.allExamples.map((example) => ({
       name: example.name,
       description: example.description,
       value: example,
@@ -595,7 +462,7 @@ class ExampleSelector {
     this.selectBox.add(this.selectElement)
 
     this.selectElement.on(SelectRenderableEvents.ITEM_SELECTED, (index: number, option: SelectOption) => {
-      this.runSelected(option.value as Example)
+      void this.runSelected(option.value as Example)
     })
 
     // Instructions at the bottom
@@ -769,29 +636,49 @@ class ExampleSelector {
     setupCommonDemoKeys(this.renderer)
   }
 
-  private runSelected(selected: Example): void {
+  private async runSelected(selected: Example): Promise<void> {
     this.inMenu = false
     this.hideMenuElements()
 
-    if (selected.run) {
-      this.currentExample = selected
-      selected.run(this.renderer)
-    } else {
-      if (!this.notImplementedText) {
-        const theme = MENU_THEMES[this.themeMode]
-        this.notImplementedText = new TextRenderable(renderer, {
-          id: "not-implemented",
-          position: "absolute",
-          left: 10,
-          top: 10,
-          content: `${selected.name} not yet implemented. Press Escape to return.`,
-          fg: theme.notImplementedColor,
-          zIndex: 10,
-        })
-        this.renderer.root.add(this.notImplementedText)
+    this.currentExample = selected
+    this.currentExampleModule = null
+
+    try {
+      const module = (await import(selected.modulePath)) as ExampleModule
+      this.currentExampleModule = module
+
+      if (module.run) {
+        module.run(this.renderer)
+      } else {
+        this.showExampleError(`${selected.name} not yet implemented. Press Escape to return.`)
       }
-      this.renderer.requestRender()
+      return
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      this.showExampleError(`${selected.name} failed to load: ${message}`)
+      return
     }
+  }
+
+  private showExampleError(content: string): void {
+    if (!this.notImplementedText) {
+      const theme = MENU_THEMES[this.themeMode]
+      this.notImplementedText = new TextRenderable(this.renderer, {
+        id: "not-implemented",
+        position: "absolute",
+        left: 2,
+        top: 2,
+        width: "95%",
+        content,
+        fg: theme.notImplementedColor,
+        zIndex: 10,
+      })
+      this.renderer.root.add(this.notImplementedText)
+    } else {
+      this.notImplementedText.content = content
+    }
+
+    this.renderer.requestRender()
   }
 
   private hideMenuElements(): void {
@@ -845,8 +732,9 @@ class ExampleSelector {
 
   private returnToMenu(): void {
     if (this.currentExample) {
-      this.currentExample.destroy?.(this.renderer)
+      this.currentExampleModule?.destroy?.(this.renderer)
       this.currentExample = null
+      this.currentExampleModule = null
     }
 
     if (this.notImplementedText) {
@@ -868,7 +756,7 @@ class ExampleSelector {
 
   private cleanup(): void {
     if (this.currentExample) {
-      this.currentExample.destroy?.(this.renderer)
+      this.currentExampleModule?.destroy?.(this.renderer)
     }
     if (this.filterInput) {
       this.filterInput.blur()

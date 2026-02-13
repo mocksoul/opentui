@@ -1,17 +1,9 @@
 #!/usr/bin/env bun
 
-import {
-  CliRenderer,
-  createCliRenderer,
-  TextRenderable,
-  BoxRenderable,
-  t,
-  bold,
-  underline,
-  green,
-  yellow,
-  cyan,
-} from ".."
+import { t, bold, underline, green, yellow, cyan } from "../lib/styled-text"
+import { createCliRenderer, type CliRenderer } from "../renderer"
+import { TextRenderable } from "../renderables/Text"
+import { BoxRenderable } from "../renderables/Box"
 import { TextNodeRenderable } from "../renderables/TextNode"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 
@@ -19,7 +11,7 @@ let mainContainer: BoxRenderable | null = null
 let demoText: TextRenderable | null = null
 let instructionsText: TextRenderable | null = null
 let statusText: TextRenderable | null = null
-let updateInterval: Timer | null = null
+let updateInterval: ReturnType<typeof setInterval> | null = null
 
 function clearUpdateInterval(): void {
   if (updateInterval) {

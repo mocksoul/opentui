@@ -1,24 +1,16 @@
 #!/usr/bin/env bun
 
-import {
-  CliRenderer,
-  createCliRenderer,
-  RGBA,
-  TextAttributes,
-  FrameBufferRenderable,
-  TextRenderable,
-  t,
-  type MouseEvent,
-  OptimizedBuffer,
-  BoxRenderable,
-  createTimeline,
-  engine,
-  Box,
-  type ProxiedVNode,
-  type BoxOptions,
-  Text,
-  type VChild,
-} from "../index"
+import { CliRenderer, createCliRenderer, type MouseEvent } from "../renderer"
+import { BoxRenderable, type BoxOptions } from "../renderables/Box"
+import { TextRenderable } from "../renderables/Text"
+import { FrameBufferRenderable } from "../renderables/FrameBuffer"
+import { RGBA } from "../lib/RGBA"
+import { t } from "../lib/styled-text"
+import { TextAttributes } from "../types"
+import { OptimizedBuffer } from "../buffer"
+import { createTimeline, engine } from "../animation/Timeline"
+import { Box, Text } from "../renderables/composition/constructs"
+import { type ProxiedVNode, type VChild } from "../renderables/composition/vnode"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 
 interface TrailCell {

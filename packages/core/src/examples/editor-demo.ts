@@ -1,16 +1,10 @@
-import {
-  CliRenderer,
-  createCliRenderer,
-  TextareaRenderable,
-  BoxRenderable,
-  TextRenderable,
-  LineNumberRenderable,
-  KeyEvent,
-  t,
-  bold,
-  cyan,
-  fg,
-} from "../index"
+import { CliRenderer, createCliRenderer } from "../renderer"
+import { TextareaRenderable } from "../renderables/Textarea"
+import { BoxRenderable } from "../renderables/Box"
+import { TextRenderable } from "../renderables/Text"
+import { LineNumberRenderable } from "../renderables/LineNumberRenderable"
+import { KeyEvent } from "../lib/KeyHandler"
+import { t, bold, cyan, fg } from "../lib/styled-text"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 
 const initialContent = `Welcome to the TextareaRenderable Demo!

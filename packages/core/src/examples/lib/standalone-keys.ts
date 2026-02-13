@@ -1,4 +1,6 @@
-import { resolveRenderLib, type CliRenderer, type KeyEvent } from "../.."
+import type { KeyEvent } from "../../lib/KeyHandler"
+import { type CliRenderer } from "../../renderer"
+import { resolveRenderLib } from "../../zig"
 
 export function setupCommonDemoKeys(renderer: CliRenderer) {
   renderer.keyInput.on("keypress", (key: KeyEvent) => {

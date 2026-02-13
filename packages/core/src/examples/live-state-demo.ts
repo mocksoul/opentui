@@ -1,22 +1,12 @@
 #!/usr/bin/env bun
 
-import {
-  CliRenderer,
-  createCliRenderer,
-  RGBA,
-  TextAttributes,
-  TextRenderable,
-  BoxRenderable,
-  type MouseEvent,
-  t,
-  bold,
-  red,
-  green,
-  blue,
-  fg,
-  parseColor,
-  Box,
-} from "../index"
+import { CliRenderer, createCliRenderer, type MouseEvent } from "../renderer"
+import { BoxRenderable } from "../renderables/Box"
+import { TextRenderable } from "../renderables/Text"
+import { RGBA, parseColor } from "../lib/RGBA"
+import { t, bold, red, green, blue, fg } from "../lib/styled-text"
+import { TextAttributes } from "../types"
+import { Box } from "../renderables/composition/constructs"
 import type { BoxOptions } from "../renderables/Box"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 

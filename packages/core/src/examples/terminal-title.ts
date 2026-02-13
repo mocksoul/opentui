@@ -1,4 +1,5 @@
-import { TextRenderable, createCliRenderer } from "../index"
+import { createCliRenderer } from "../renderer"
+import { TextRenderable } from "../renderables/Text"
 
 async function testTerminalTitle() {
   const renderer = await createCliRenderer({ exitOnCtrlC: true })

@@ -3,13 +3,17 @@
  * Text wrapping example
  * Demonstrates automatic text wrapping when the wrap option is enabled
  */
-import { CliRenderer, createCliRenderer, TextRenderable, BoxRenderable, type MouseEvent, t, fg, bold } from ".."
+import { type CliRenderer, createCliRenderer, type MouseEvent } from "../renderer"
+import { TextRenderable } from "../renderables/Text"
+import { BoxRenderable } from "../renderables/Box"
 import { TextNodeRenderable } from "../renderables/TextNode"
 import { ScrollBoxRenderable } from "../renderables/ScrollBox"
 import { InputRenderable, InputRenderableEvents } from "../renderables/Input"
+import { bold, fg, t } from "../lib/styled-text"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
-import { existsSync } from "fs"
-import { resolve } from "path"
+import { readFile, stat, writeFile } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 
 let mainContainer: BoxRenderable | null = null
 let contentBox: BoxRenderable | null = null
@@ -543,7 +547,6 @@ export function run(renderer: CliRenderer): void {
   filePathInput = new InputRenderable(renderer, {
     id: "file-path-input",
     width: "100%",
-    height: "100%",
     backgroundColor: "#1e1e2e",
     textColor: "#c0caf5",
     placeholder: "Enter file path (relative to cwd or absolute)...",
@@ -579,7 +582,7 @@ export function run(renderer: CliRenderer): void {
       }
 
       // Get file size for display
-      const fileStats = await Bun.file(filePath).stat()
+      const fileStats = await stat(filePath)
       const fileSizeBytes = fileStats.size
       const fileSizeMB = (fileSizeBytes / (1024 * 1024)).toFixed(2)
 
@@ -684,14 +687,14 @@ export function run(renderer: CliRenderer): void {
           const fileSizeMB = (fileSizeBytes / (1024 * 1024)).toFixed(2)
 
           // Store in OS tmp directory
-          const tempDir = process.env.TMPDIR || process.env.TEMP || "/tmp"
+          const tempDir = tmpdir()
           const fileName = `babylon-${Date.now()}.js`
-          const filePath = `${tempDir}/${fileName}`
+          const filePath = join(tempDir, fileName)
 
-          await Bun.write(filePath, content)
+          await writeFile(filePath, content)
 
-          // Load it back using Bun.file().text()
-          const loadedContent = await Bun.file(filePath).text()
+          // Load it back from disk
+          const loadedContent = await readFile(filePath, "utf8")
 
           // Create a new TextNodeRenderable with the downloaded content
           const babylonTextNode = TextNodeRenderable.fromString(
@@ -744,6 +747,7 @@ if (import.meta.main) {
     exitOnCtrlC: true,
   })
   run(renderer)
+  renderer.requestRender()
   setupCommonDemoKeys(renderer)
-  // renderer.start() is called by setupCommonDemoKeys
+  renderer.start()
 }

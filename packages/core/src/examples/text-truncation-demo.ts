@@ -1,17 +1,9 @@
 #!/usr/bin/env bun
 
-import {
-  CliRenderer,
-  createCliRenderer,
-  TextRenderable,
-  BoxRenderable,
-  t,
-  green,
-  bold,
-  cyan,
-  yellow,
-  magenta,
-} from ".."
+import { t, green, bold, cyan, yellow, magenta } from "../lib/styled-text"
+import { createCliRenderer, type CliRenderer } from "../renderer"
+import { TextRenderable } from "../renderables/Text"
+import { BoxRenderable } from "../renderables/Box"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 
 let renderer: CliRenderer | null = null

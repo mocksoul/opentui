@@ -1,18 +1,9 @@
-import {
-  CliRenderer,
-  createCliRenderer,
-  t,
-  fg,
-  underline,
-  link,
-  bold,
-  italic,
-  BoxRenderable,
-  RGBA,
-  TextRenderable,
-  type MouseEvent,
-  type RenderContext,
-} from "../index"
+import { CliRenderer, createCliRenderer, type MouseEvent } from "../renderer"
+import { t, fg, underline, link, bold, italic } from "../lib/styled-text"
+import { BoxRenderable } from "../renderables/Box"
+import { RGBA } from "../lib/RGBA"
+import { TextRenderable } from "../renderables/Text"
+import { type RenderContext } from "../types"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 
 let nextZIndex = 100

@@ -1,12 +1,9 @@
-import {
-  BoxRenderable,
-  CliRenderer,
-  createCliRenderer,
-  FrameBufferRenderable,
-  RGBA,
-  TextRenderable,
-  type KeyEvent,
-} from "../index"
+import { CliRenderer, createCliRenderer } from "../renderer"
+import { BoxRenderable } from "../renderables/Box"
+import { TextRenderable } from "../renderables/Text"
+import { FrameBufferRenderable } from "../renderables/FrameBuffer"
+import { RGBA } from "../lib/RGBA"
+import { type KeyEvent } from "../lib/KeyHandler"
 import { renderFontToFrameBuffer } from "../lib/ascii.font"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 

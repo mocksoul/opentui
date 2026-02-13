@@ -1,11 +1,8 @@
-import {
-  CliRenderer,
-  createCliRenderer,
-  BoxRenderable,
-  TextRenderable,
-  type ParsedKey,
-  ScrollBoxRenderable,
-} from "../index"
+import { CliRenderer, createCliRenderer } from "../renderer"
+import { BoxRenderable } from "../renderables/Box"
+import { TextRenderable } from "../renderables/Text"
+import { type ParsedKey } from "../lib/parse.keypress"
+import { ScrollBoxRenderable } from "../renderables/ScrollBox"
 import { MarkdownRenderable } from "../renderables/Markdown"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 import { parseColor } from "../lib/RGBA"

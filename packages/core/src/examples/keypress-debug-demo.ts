@@ -1,6 +1,9 @@
 #!/usr/bin/env bun
 
-import { type CliRenderer, createCliRenderer, BoxRenderable, TextRenderable, type KeyEvent } from "../index"
+import { type CliRenderer, createCliRenderer } from "../renderer"
+import { BoxRenderable } from "../renderables/Box"
+import { TextRenderable } from "../renderables/Text"
+import { type KeyEvent } from "../lib/KeyHandler"
 import { ScrollBoxRenderable } from "../renderables/ScrollBox"
 import { TextNodeRenderable } from "../renderables/TextNode"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"

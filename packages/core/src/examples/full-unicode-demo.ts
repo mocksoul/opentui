@@ -1,18 +1,10 @@
-import {
-  createCliRenderer,
-  RGBA,
-  FrameBufferRenderable,
-  TextRenderable,
-  t,
-  blue,
-  bold,
-  underline,
-  fg,
-  type MouseEvent,
-  type CliRenderer,
-  type RenderContext,
-  BoxRenderable,
-} from "../index"
+import { createCliRenderer, type MouseEvent, type CliRenderer } from "../renderer"
+import { BoxRenderable } from "../renderables/Box"
+import { TextRenderable } from "../renderables/Text"
+import { FrameBufferRenderable } from "../renderables/FrameBuffer"
+import { RGBA } from "../lib/RGBA"
+import { t, blue, bold, underline, fg } from "../lib/styled-text"
+import { type RenderContext } from "../types"
 
 const GRAPHEME_LINES: string[] = [
   "👩🏽‍💻  👨‍👩‍👧‍👦  🏳️‍🌈  🇺🇸  🇩🇪  🇯🇵  🇮🇳",

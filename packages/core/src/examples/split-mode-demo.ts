@@ -1,4 +1,7 @@
-import { createCliRenderer, TextRenderable, t, type CliRenderer, BoxRenderable, bold, fg } from "../index"
+import { createCliRenderer, type CliRenderer } from "../renderer"
+import { TextRenderable } from "../renderables/Text"
+import { t, bold, fg } from "../lib/styled-text"
+import { BoxRenderable } from "../renderables/Box"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 import { createTimeline, type JSAnimation, Timeline } from "../animation/Timeline"
 

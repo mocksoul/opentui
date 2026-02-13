@@ -1,16 +1,12 @@
 #!/usr/bin/env bun
 
-import {
-  CliRenderer,
-  createCliRenderer,
-  RGBA,
-  TextAttributes,
-  TextRenderable,
-  FrameBufferRenderable,
-  BoxRenderable,
-  InputRenderable,
-  InputRenderableEvents,
-} from "../index"
+import { CliRenderer, createCliRenderer } from "../renderer"
+import { BoxRenderable } from "../renderables/Box"
+import { TextRenderable } from "../renderables/Text"
+import { FrameBufferRenderable } from "../renderables/FrameBuffer"
+import { InputRenderable, InputRenderableEvents } from "../renderables/Input"
+import { RGBA } from "../lib/RGBA"
+import { TextAttributes } from "../types"
 import { ScrollBoxRenderable } from "../renderables/ScrollBox"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 import type { TerminalColors } from "../lib/terminal-palette"

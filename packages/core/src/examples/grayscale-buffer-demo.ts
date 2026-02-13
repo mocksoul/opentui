@@ -1,6 +1,10 @@
 #!/usr/bin/env bun
 
-import { CliRenderer, createCliRenderer, OptimizedBuffer, RGBA, FrameBufferRenderable, type KeyEvent } from "../index"
+import { type KeyEvent } from "../lib/KeyHandler"
+import { RGBA } from "../lib/RGBA"
+import { OptimizedBuffer } from "../buffer"
+import { createCliRenderer, type CliRenderer } from "../renderer"
+import { FrameBufferRenderable } from "../renderables/FrameBuffer"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 
 let framebuffer: OptimizedBuffer | null = null

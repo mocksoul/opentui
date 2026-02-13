@@ -1,6 +1,9 @@
-import { TextAttributes, createCliRenderer, TextRenderable, BoxRenderable, type KeyEvent } from "../index"
+import { type KeyEvent } from "../lib/KeyHandler"
+import { createCliRenderer, type CliRenderer } from "../renderer"
+import { BoxRenderable } from "../renderables/Box"
+import { TextRenderable } from "../renderables/Text"
+import { TextAttributes } from "../types"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
-import type { CliRenderer } from "../index"
 
 let globalKeyboardHandler: ((key: KeyEvent) => void) | null = null
 let animationSpeed = 4000

@@ -1,6 +1,9 @@
 #!/usr/bin/env bun
 
-import { CliRenderer, createCliRenderer, BoxRenderable, TextRenderable, RGBA } from ".."
+import { type CliRenderer, createCliRenderer } from "../renderer"
+import { BoxRenderable } from "../renderables/Box"
+import { TextRenderable } from "../renderables/Text"
+import { RGBA } from "../lib/RGBA"
 import { ASCIIFontRenderable } from "../renderables/ASCIIFont"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 

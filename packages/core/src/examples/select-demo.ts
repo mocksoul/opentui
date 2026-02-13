@@ -1,15 +1,8 @@
-import {
-  createCliRenderer,
-  SelectRenderable,
-  SelectRenderableEvents,
-  RenderableEvents,
-  type SelectOption,
-  type CliRenderer,
-  t,
-  bold,
-  fg,
-  BoxRenderable,
-} from "../index"
+import { createCliRenderer, type CliRenderer } from "../renderer"
+import { SelectRenderable, SelectRenderableEvents, type SelectOption } from "../renderables/Select"
+import { RenderableEvents } from "../Renderable"
+import { t, bold, fg } from "../lib/styled-text"
+import { BoxRenderable } from "../renderables/Box"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 import { TextRenderable } from "../renderables/Text"
 

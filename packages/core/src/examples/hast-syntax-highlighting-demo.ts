@@ -1,4 +1,7 @@
-import { CliRenderer, createCliRenderer, TextRenderable, BoxRenderable, type KeyEvent } from "../index"
+import { type KeyEvent } from "../lib/KeyHandler"
+import { createCliRenderer, type CliRenderer } from "../renderer"
+import { BoxRenderable } from "../renderables/Box"
+import { TextRenderable } from "../renderables/Text"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 import { parseColor } from "../lib/RGBA"
 import { hastToStyledText, type HASTElement } from "../lib/hast-styled-text"

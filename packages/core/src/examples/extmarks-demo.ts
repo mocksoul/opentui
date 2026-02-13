@@ -1,13 +1,9 @@
-import {
-  CliRenderer,
-  createCliRenderer,
-  TextareaRenderable,
-  BoxRenderable,
-  TextRenderable,
-  KeyEvent,
-  type ExtmarksController,
-  type ExtmarkDeletedEvent,
-} from "../index"
+import { CliRenderer, createCliRenderer } from "../renderer"
+import { TextareaRenderable } from "../renderables/Textarea"
+import { BoxRenderable } from "../renderables/Box"
+import { TextRenderable } from "../renderables/Text"
+import { KeyEvent } from "../lib/KeyHandler"
+import { type ExtmarksController, type ExtmarkDeletedEvent } from "../lib/extmarks"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 import { SyntaxStyle } from "../syntax-style"
 import { RGBA } from "../lib/RGBA"

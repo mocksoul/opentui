@@ -10,15 +10,11 @@
 //   5. Try minimizing and restoring the window too
 //   6. Press Escape to return to menu, Ctrl+C to exit
 
-import {
-  type CliRenderer,
-  createCliRenderer,
-  BoxRenderable,
-  TextRenderable,
-  RGBA,
-  TextAttributes,
-  type MouseEvent,
-} from "../index"
+import { type CliRenderer, createCliRenderer, type MouseEvent } from "../renderer"
+import { BoxRenderable } from "../renderables/Box"
+import { TextRenderable } from "../renderables/Text"
+import { RGBA } from "../lib/RGBA"
+import { TextAttributes } from "../types"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 
 let container: BoxRenderable | null = null

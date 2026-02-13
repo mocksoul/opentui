@@ -1,14 +1,8 @@
-import {
-  createCliRenderer,
-  InputRenderable,
-  InputRenderableEvents,
-  RenderableEvents,
-  type CliRenderer,
-  t,
-  bold,
-  fg,
-  BoxRenderable,
-} from "../index"
+import { createCliRenderer, type CliRenderer } from "../renderer"
+import { InputRenderable, InputRenderableEvents } from "../renderables/Input"
+import { RenderableEvents } from "../Renderable"
+import { BoxRenderable } from "../renderables/Box"
+import { bold, fg, t } from "../lib/styled-text"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 import { TextRenderable } from "../renderables/Text"
 
@@ -155,7 +149,6 @@ export function run(rendererInstance: CliRenderer): void {
     left: 5,
     top: 2,
     width: 40,
-    height: 3,
     zIndex: 100,
     backgroundColor: "#001122",
     textColor: "#FFFFFF",
@@ -172,7 +165,6 @@ export function run(rendererInstance: CliRenderer): void {
     left: 5,
     top: 6,
     width: 40,
-    height: 3,
     zIndex: 100,
     backgroundColor: "#001122",
     textColor: "#FFFFFF",
@@ -189,7 +181,6 @@ export function run(rendererInstance: CliRenderer): void {
     left: 5,
     top: 10,
     width: 40,
-    height: 3,
     zIndex: 100,
     backgroundColor: "#001122",
     textColor: "#FFFFFF",
@@ -206,7 +197,6 @@ export function run(rendererInstance: CliRenderer): void {
     left: 5,
     top: 14,
     width: 60,
-    height: 3,
     zIndex: 100,
     backgroundColor: "#001122",
     textColor: "#FFFFFF",

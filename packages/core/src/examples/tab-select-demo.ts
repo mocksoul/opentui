@@ -1,15 +1,8 @@
-import {
-  createCliRenderer,
-  TabSelectRenderable,
-  TabSelectRenderableEvents,
-  RenderableEvents,
-  BoxRenderable,
-  type TabSelectOption,
-  type CliRenderer,
-  t,
-  bold,
-  fg,
-} from "../index"
+import { createCliRenderer, type CliRenderer } from "../renderer"
+import { TabSelectRenderable, TabSelectRenderableEvents, type TabSelectOption } from "../renderables/TabSelect"
+import { RenderableEvents } from "../Renderable"
+import { BoxRenderable } from "../renderables/Box"
+import { t, bold, fg } from "../lib/styled-text"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 import { TextRenderable } from "../renderables/Text"
 

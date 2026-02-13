@@ -1,18 +1,7 @@
-import {
-  CliRenderer,
-  createCliRenderer,
-  t,
-  blue,
-  bold,
-  underline,
-  red,
-  green,
-  bgYellow,
-  fg,
-  link,
-  BoxRenderable,
-  type KeyEvent,
-} from "../index"
+import { CliRenderer, createCliRenderer } from "../renderer"
+import { t, blue, bold, underline, red, green, bgYellow, fg, link } from "../lib/styled-text"
+import { BoxRenderable } from "../renderables/Box"
+import { type KeyEvent } from "../lib/KeyHandler"
 import { TextRenderable } from "../renderables/Text"
 import { setupCommonDemoKeys } from "./lib/standalone-keys"
 
