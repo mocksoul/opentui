@@ -1,6 +1,6 @@
 const ffiStructs = (globalThis as { Bun?: unknown }).Bun
   ? await import("bun-ffi-structs")
-  : await import("./ffi-structs")
+  : await import("./deno-ffi-structs")
 
 const { defineStruct, defineEnum } = ffiStructs as {
   defineStruct: any
