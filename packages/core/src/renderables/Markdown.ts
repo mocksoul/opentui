@@ -121,9 +121,16 @@ export class MarkdownRenderable extends Renderable {
 
   set streaming(value: boolean) {
     if (this._streaming !== value) {
+      const wasStreaming = this._streaming
       this._streaming = value
-      // Don't clear parseState - incremental parser handles streaming correctly
-      this.updateBlocks()
+      if (wasStreaming && !value) {
+        // When streaming ends, force full rebuild to ensure all table rows are shown.
+        // updateBlocks() skips table updates when token raw hasn't changed,
+        // but the table renderable was created with N-1 rows during streaming.
+        this.clearCache()
+      } else {
+        this.updateBlocks()
+      }
       this.requestRender()
     }
   }
