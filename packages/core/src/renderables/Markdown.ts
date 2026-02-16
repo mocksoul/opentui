@@ -122,8 +122,8 @@ export class MarkdownRenderable extends Renderable {
   set streaming(value: boolean) {
     if (this._streaming !== value) {
       this._streaming = value
-      // Streaming mode changes table row visibility even when token raw is unchanged.
-      // Force a full rebuild on mode transitions to keep table rendering correct.
+      // Force a full rebuild on mode transitions to keep table rendering
+      // correct.
       this.clearCache()
     }
   }
