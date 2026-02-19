@@ -444,70 +444,55 @@ export class MarkdownRenderable extends Renderable {
 
     const rowsToRender = this._streaming && table.rows.length > 0 ? table.rows.slice(0, -1) : table.rows
     const colCount = table.header.length
+    const totalRows = 1 + rowsToRender.length // header + data rows
 
-    // Traverse existing table structure: tableBox -> columnBoxes -> cells
-    const columns = (tableBox as any)._childrenInLayoutOrder as Renderable[]
-    for (let col = 0; col < colCount; col++) {
-      const columnBox = columns[col]
-      if (!columnBox) continue
+    // Traverse row-major structure: tableBox -> rows -> cells
+    const rows = (tableBox as any)._childrenInLayoutOrder as Renderable[]
+    for (let row = 0; row < Math.min(totalRows, rows.length); row++) {
+      const isHeaderRow = row === 0
+      const dataRowIndex = row - 1
+      const rowBox = rows[row]
+      const cells = (rowBox as any)._childrenInLayoutOrder as Renderable[]
 
-      // Update column border colors
-      if (columnBox instanceof BoxRenderable) {
-        columnBox.borderColor = borderColor
-      }
+      for (let col = 0; col < Math.min(colCount, cells.length); col++) {
+        const cellBox = cells[col]
 
-      const columnChildren = (columnBox as any)._childrenInLayoutOrder as Renderable[]
-
-      // Update header (first child of column)
-      const headerBox = columnChildren[0]
-      if (headerBox instanceof BoxRenderable) {
-        headerBox.borderColor = borderColor
-        const headerChildren = (headerBox as any)._childrenInLayoutOrder as Renderable[]
-        const headerText = headerChildren[0]
-        if (headerText instanceof TextRenderable) {
-          const headerCell = table.header[col]
-          const headerChunks: TextChunk[] = []
-          this.renderInlineContent(headerCell.tokens, headerChunks)
-          const styledHeaderChunks = headerChunks.map((chunk) => ({
-            ...chunk,
-            fg: headingStyle?.fg ?? chunk.fg,
-            bg: headingStyle?.bg ?? chunk.bg,
-            attributes: headingStyle
-              ? createTextAttributes({
-                  bold: headingStyle.bold,
-                  italic: headingStyle.italic,
-                  underline: headingStyle.underline,
-                  dim: headingStyle.dim,
-                })
-              : chunk.attributes,
-          }))
-          headerText.content = new StyledText(styledHeaderChunks)
-        }
-      }
-
-      // Update data rows (remaining children)
-      for (let row = 0; row < rowsToRender.length; row++) {
-        const childIndex = row + 1 // +1 because header is first child
-        const cellContainer = columnChildren[childIndex]
-
-        let cellText: TextRenderable | undefined
-        if (cellContainer instanceof BoxRenderable) {
-          // Cell has a border box wrapper
-          cellContainer.borderColor = borderColor
-          const cellChildren = (cellContainer as any)._childrenInLayoutOrder as Renderable[]
-          cellText = cellChildren[0] as TextRenderable
-        } else if (cellContainer instanceof TextRenderable) {
-          // Last row, no border box
-          cellText = cellContainer
+        // Update border color
+        if (cellBox instanceof BoxRenderable) {
+          cellBox.borderColor = borderColor
         }
 
-        if (cellText) {
-          const cell = rowsToRender[row][col]
-          const cellChunks: TextChunk[] = []
-          if (cell) {
-            this.renderInlineContent(cell.tokens, cellChunks)
+        // Update text content (first child of cellBox)
+        const cellChildren = (cellBox as any)._childrenInLayoutOrder as Renderable[]
+        const cellText = cellChildren[0]
+
+        if (cellText instanceof TextRenderable) {
+          if (isHeaderRow) {
+            const headerCell = table.header[col]
+            const headerChunks: TextChunk[] = []
+            this.renderInlineContent(headerCell.tokens, headerChunks)
+            const styledHeaderChunks = headerChunks.map((chunk) => ({
+              ...chunk,
+              fg: headingStyle?.fg ?? chunk.fg,
+              bg: headingStyle?.bg ?? chunk.bg,
+              attributes: headingStyle
+                ? createTextAttributes({
+                    bold: headingStyle.bold,
+                    italic: headingStyle.italic,
+                    underline: headingStyle.underline,
+                    dim: headingStyle.dim,
+                  })
+                : chunk.attributes,
+            }))
+            cellText.content = new StyledText(styledHeaderChunks)
+          } else {
+            const cell = rowsToRender[dataRowIndex]?.[col]
+            const cellChunks: TextChunk[] = []
+            if (cell) {
+              this.renderInlineContent(cell.tokens, cellChunks)
+            }
+            cellText.content = new StyledText(cellChunks.length > 0 ? cellChunks : [this.createDefaultChunk(" ")])
           }
-          cellText.content = new StyledText(cellChunks.length > 0 ? cellChunks : [this.createDefaultChunk(" ")])
         }
       }
     }
@@ -523,107 +508,122 @@ export class MarkdownRenderable extends Renderable {
       return this.createTextRenderable([this.createDefaultChunk(table.raw)], id, marginBottom)
     }
 
+    const borderColor = this.getStyle("conceal")?.fg ?? "#888888"
+    const headingStyle = this.getStyle("markup.heading") || this.getStyle("default")
+    const totalRows = 1 + rowsToRender.length // header + data rows
+    const CELL_PADDING = 2 // paddingLeft: 1 + paddingRight: 1
+
+    // Pre-render all cell chunks and calculate natural column widths.
+    // This ensures columns are sized to their content (compact tables for short data)
+    // while allowing proportional shrinking with word-wrap for wide tables.
+    const allChunks: TextChunk[][][] = [] // allChunks[row][col] = chunks
+    const colNaturalWidths: number[] = new Array(colCount).fill(0)
+
+    for (let row = 0; row < totalRows; row++) {
+      allChunks[row] = []
+      for (let col = 0; col < colCount; col++) {
+        let chunks: TextChunk[]
+        if (row === 0) {
+          const headerCell = table.header[col]
+          const headerChunks: TextChunk[] = []
+          this.renderInlineContent(headerCell.tokens, headerChunks)
+          chunks = headerChunks.map((chunk) => ({
+            ...chunk,
+            fg: headingStyle?.fg ?? chunk.fg,
+            bg: headingStyle?.bg ?? chunk.bg,
+            attributes: headingStyle
+              ? createTextAttributes({
+                  bold: headingStyle.bold,
+                  italic: headingStyle.italic,
+                  underline: headingStyle.underline,
+                  dim: headingStyle.dim,
+                })
+              : chunk.attributes,
+          }))
+        } else {
+          const cell = rowsToRender[row - 1]?.[col]
+          chunks = []
+          if (cell) {
+            this.renderInlineContent(cell.tokens, chunks)
+          }
+          if (chunks.length === 0) {
+            chunks = [this.createDefaultChunk(" ")]
+          }
+        }
+        allChunks[row][col] = chunks
+
+        const contentWidth = chunks.reduce((sum, c) => sum + c.text.length, 0)
+        colNaturalWidths[col] = Math.max(colNaturalWidths[col], contentWidth + CELL_PADDING)
+      }
+    }
+
+    // Row-major table: vertical stack of rows, each row is a horizontal flex container.
+    // Cells in the same row auto-sync height via alignItems: stretch (Yoga default).
+    // flexBasis = natural width ensures compact tables; flexShrink = 1 enables
+    // proportional shrinking with word-wrap when the table is wider than the viewport.
     const tableBox = new BoxRenderable(this.ctx, {
       id,
-      flexDirection: "row",
+      flexDirection: "column",
       marginBottom,
     })
 
-    const borderColor = this.getStyle("conceal")?.fg ?? "#888888"
+    for (let row = 0; row < totalRows; row++) {
+      const isLastRow = row === totalRows - 1
 
-    for (let col = 0; col < colCount; col++) {
-      const isFirstCol = col === 0
-      const isLastCol = col === colCount - 1
-
-      const columnBox = new BoxRenderable(this.ctx, {
-        id: `${id}-col-${col}`,
-        flexDirection: "column",
-        border: isLastCol ? true : ["top", "bottom", "left"],
-        borderColor,
-        // Use T-joins for non-first columns to connect with previous column
-        customBorderChars: isFirstCol
-          ? undefined
-          : {
-              topLeft: "┬",
-              topRight: "┐",
-              bottomLeft: "┴",
-              bottomRight: "┘",
-              horizontal: "─",
-              vertical: "│",
-              topT: "┬",
-              bottomT: "┴",
-              leftT: "├",
-              rightT: "┤",
-              cross: "┼",
-            },
+      const rowBox = new BoxRenderable(this.ctx, {
+        id: `${id}-row-${row}`,
+        flexDirection: "row",
       })
 
-      const headerCell = table.header[col]
-      const headerChunks: TextChunk[] = []
-      this.renderInlineContent(headerCell.tokens, headerChunks)
-      const headingStyle = this.getStyle("markup.heading") || this.getStyle("default")
-      const styledHeaderChunks = headerChunks.map((chunk) => ({
-        ...chunk,
-        fg: headingStyle?.fg ?? chunk.fg,
-        bg: headingStyle?.bg ?? chunk.bg,
-        attributes: headingStyle
-          ? createTextAttributes({
-              bold: headingStyle.bold,
-              italic: headingStyle.italic,
-              underline: headingStyle.underline,
-              dim: headingStyle.dim,
-            })
-          : chunk.attributes,
-      }))
+      for (let col = 0; col < colCount; col++) {
+        const isLastCol = col === colCount - 1
 
-      const headerBox = new BoxRenderable(this.ctx, {
-        id: `${id}-col-${col}-header-box`,
-        border: ["bottom"],
-        borderColor,
-      })
-      headerBox.add(
-        new TextRenderable(this.ctx, {
-          id: `${id}-col-${col}-header`,
-          content: new StyledText(styledHeaderChunks),
-          height: 1,
-          overflow: "hidden",
-          paddingLeft: 1,
-          paddingRight: 1,
-        }),
-      )
-      columnBox.add(headerBox)
+        // Border sides: always top+left; last col adds right; last row adds bottom
+        const borderSides: ("top" | "right" | "bottom" | "left")[] = ["top", "left"]
+        if (isLastCol) borderSides.push("right")
+        if (isLastRow) borderSides.push("bottom")
 
-      for (let row = 0; row < rowsToRender.length; row++) {
-        const cell = rowsToRender[row][col]
-        const cellChunks: TextChunk[] = []
-        if (cell) {
-          this.renderInlineContent(cell.tokens, cellChunks)
+        // Custom border chars for proper T-junctions and crosses at cell intersections
+        const customBorderChars = {
+          topLeft: row === 0 && col === 0 ? "┌" : row === 0 ? "┬" : col === 0 ? "├" : "┼",
+          topRight: row === 0 ? "┐" : "┤",
+          bottomLeft: col === 0 ? "└" : "┴",
+          bottomRight: "┘",
+          horizontal: "─",
+          vertical: "│",
+          topT: "┬",
+          bottomT: "┴",
+          leftT: "├",
+          rightT: "┤",
+          cross: "┼",
         }
 
-        const isLastRow = row === rowsToRender.length - 1
-        const cellText = new TextRenderable(this.ctx, {
-          id: `${id}-col-${col}-row-${row}`,
-          content: new StyledText(cellChunks.length > 0 ? cellChunks : [this.createDefaultChunk(" ")]),
-          height: 1,
-          overflow: "hidden",
-          paddingLeft: 1,
-          paddingRight: 1,
+        // Yoga uses border-box sizing: flexBasis must include border widths
+        const borderLeftWidth = 1 // all cells have left border
+        const borderRightWidth = isLastCol ? 1 : 0
+
+        const cellBox = new BoxRenderable(this.ctx, {
+          id: `${id}-cell-${row}-${col}`,
+          flexBasis: colNaturalWidths[col] + borderLeftWidth + borderRightWidth,
+          flexShrink: 1,
+          border: borderSides,
+          borderColor,
+          customBorderChars,
         })
 
-        if (isLastRow) {
-          columnBox.add(cellText)
-        } else {
-          const cellBox = new BoxRenderable(this.ctx, {
-            id: `${id}-col-${col}-row-${row}-box`,
-            border: ["bottom"],
-            borderColor,
-          })
-          cellBox.add(cellText)
-          columnBox.add(cellBox)
-        }
+        const cellText = new TextRenderable(this.ctx, {
+          id: `${id}-text-${row}-${col}`,
+          content: new StyledText(allChunks[row][col]),
+          paddingLeft: 1,
+          paddingRight: 1,
+          // No explicit height or overflow: auto-size with word wrap
+        })
+
+        cellBox.add(cellText)
+        rowBox.add(cellBox)
       }
 
-      tableBox.add(columnBox)
+      tableBox.add(rowBox)
     }
 
     return tableBox
