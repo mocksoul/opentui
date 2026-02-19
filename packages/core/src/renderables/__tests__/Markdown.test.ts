@@ -984,8 +984,7 @@ test("incomplete link (no closing paren)", async () => {
 
   expect(await renderMarkdown(markdown)).toMatchInlineSnapshot(`
     "
-    Check out [this link](https://example.com (https://example.
-    com)"
+    Check out [this link](https://example.com"
   `)
 })
 
