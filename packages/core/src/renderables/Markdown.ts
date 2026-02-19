@@ -352,12 +352,21 @@ export class MarkdownRenderable extends Renderable {
         chunks.push(this.createChunk("- ", "markup.list"))
       }
 
-      for (let i = 0; i < item.tokens.length; i++) {
+      // Handle checkbox: marked puts it as the first token, render inline before text
+      let startIndex = 0
+      if (item.tokens.length > 0 && (item.tokens[0] as MarkedToken).type === "checkbox") {
+        const cb = item.tokens[0] as Tokens.Checkbox
+        const checkmark = cb.checked ? "[x] " : "[ ] "
+        chunks.push(this.createChunk(checkmark, "markup.list"))
+        startIndex = 1
+      }
+
+      for (let i = startIndex; i < item.tokens.length; i++) {
         const child = item.tokens[i]
-        if (child.type === "text" && i === 0 && "tokens" in child && child.tokens) {
+        if (child.type === "text" && i <= 1 && "tokens" in child && child.tokens) {
           this.renderInlineContent(child.tokens, chunks)
           chunks.push(this.createDefaultChunk("\n"))
-        } else if (child.type === "paragraph" && i === 0) {
+        } else if (child.type === "paragraph" && i <= 1) {
           this.renderInlineContent((child as Tokens.Paragraph).tokens, chunks)
           chunks.push(this.createDefaultChunk("\n"))
         } else {
