@@ -233,9 +233,14 @@ export class MarkdownRenderable extends Renderable {
           for (const child of token.tokens) {
             this.renderInlineTokenWithStyle(child as MarkedToken, chunks, "markup.link.label", linkHref)
           }
-          chunks.push(this.createChunk(" (", "markup.link", linkHref))
-          chunks.push(this.createChunk(token.href, "markup.link.url", linkHref))
-          chunks.push(this.createChunk(")", "markup.link", linkHref))
+          // Only show (href) suffix when label text differs from the URL itself
+          // (autolinks and bare URLs have label === href, so showing both is redundant)
+          const labelText = token.tokens.map((t: { raw: string }) => t.raw).join("")
+          if (labelText !== token.href) {
+            chunks.push(this.createChunk(" (", "markup.link", linkHref))
+            chunks.push(this.createChunk(token.href, "markup.link.url", linkHref))
+            chunks.push(this.createChunk(")", "markup.link", linkHref))
+          }
         } else {
           chunks.push(this.createChunk("[", "markup.link", linkHref))
           for (const child of token.tokens) {
