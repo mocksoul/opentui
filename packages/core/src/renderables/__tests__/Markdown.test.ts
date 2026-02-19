@@ -56,9 +56,9 @@ test("basic table alignment", async () => {
     "
     ┌───────┬─────┐
     │Name   │Age  │
-    │───────│─────│
+    ├───────┼─────┤
     │Alice  │30   │
-    │───────│─────│
+    ├───────┼─────┤
     │Bob    │5    │
     └───────┴─────┘"
   `)
@@ -75,11 +75,11 @@ test("table with inline code (backticks)", async () => {
     "
     ┌───────────────┬───────────────┐
     │Command        │Description    │
-    │───────────────│───────────────│
+    ├───────────────┼───────────────┤
     │npm install    │Install deps   │
-    │───────────────│───────────────│
+    ├───────────────┼───────────────┤
     │npm run build  │Build project  │
-    │───────────────│───────────────│
+    ├───────────────┼───────────────┤
     │npm test       │Run tests      │
     └───────────────┴───────────────┘"
   `)
@@ -95,9 +95,9 @@ test("table with bold text", async () => {
     "
     ┌────────────────┬────────┐
     │Feature         │Status  │
-    │────────────────│────────│
+    ├────────────────┼────────┤
     │Authentication  │Done    │
-    │────────────────│────────│
+    ├────────────────┼────────┤
     │API             │WIP     │
     └────────────────┴────────┘"
   `)
@@ -113,9 +113,9 @@ test("table with italic text", async () => {
     "
     ┌──────┬───────────┐
     │Item  │Note       │
-    │──────│───────────│
+    ├──────┼───────────┤
     │One   │important  │
-    │──────│───────────│
+    ├──────┼───────────┤
     │Two   │ok         │
     └──────┴───────────┘"
   `)
@@ -131,9 +131,9 @@ test("table with mixed formatting", async () => {
     "
     ┌───────┬────────┬────────┐
     │Type   │Value   │Notes   │
-    │───────│────────│────────│
+    ├───────┼────────┼────────┤
     │Bold   │code    │italic  │
-    │───────│────────│────────│
+    ├───────┼────────┼────────┤
     │Plain  │strong  │cmd     │
     └───────┴────────┴────────┘"
   `)
@@ -149,9 +149,9 @@ test("table with alignment markers (left, center, right)", async () => {
     "
     ┌───────────┬────────┬───────┐
     │Left       │Center  │Right  │
-    │───────────│────────│───────│
+    ├───────────┼────────┼───────┤
     │A          │B       │C      │
-    │───────────│────────│───────│
+    ├───────────┼────────┼───────┤
     │Long text  │X       │Y      │
     └───────────┴────────┴───────┘"
   `)
@@ -167,9 +167,9 @@ test("table with empty cells", async () => {
     "
     ┌───┬───┐
     │A  │B  │
-    │───│───│
+    ├───┼───┤
     │X  │   │
-    │───│───│
+    ├───┼───┤
     │   │Y  │
     └───┴───┘"
   `)
@@ -184,7 +184,7 @@ test("table with long header and short content", async () => {
     "
     ┌─────────────────────────┬───────┐
     │Very Long Column Header  │Short  │
-    │─────────────────────────│───────│
+    ├─────────────────────────┼───────┤
     │A                        │B      │
     └─────────────────────────┴───────┘"
   `)
@@ -199,7 +199,7 @@ test("table with short header and long content", async () => {
     "
     ┌───────────────────────────┬───────┐
     │X                          │Y      │
-    │───────────────────────────│───────│
+    ├───────────────────────────┼───────┤
     │This is very long content  │Short  │
     └───────────────────────────┴───────┘"
   `)
@@ -224,7 +224,7 @@ test("table inside code block should NOT be formatted", async () => {
 
     ┌──────┬───────────┐
     │Real  │Table      │
-    │──────│───────────│
+    ├──────┼───────────┤
     │Is    │Formatted  │
     └──────┴───────────┘"
   `)
@@ -245,7 +245,7 @@ Some text between.
     "
     ┌────────┬───┐
     │Table1  │A  │
-    │────────│───│
+    ├────────┼───┤
     │X       │Y  │
     └────────┴───┘
 
@@ -253,7 +253,7 @@ Some text between.
 
     ┌──────────────┬────┐
     │Table2        │BB  │
-    │──────────────│────│
+    ├──────────────┼────┤
     │Long content  │Z   │
     └──────────────┴────┘"
   `)
@@ -269,9 +269,9 @@ test("table with escaped pipe character", async () => {
     "
     ┌───────────┬──────────┐
     │Command    │Output    │
-    │───────────│──────────│
+    ├───────────┼──────────┤
     │echo       │Hello     │
-    │───────────│──────────│
+    ├───────────┼──────────┤
     │ls | grep  │Filtered  │
     └───────────┴──────────┘"
   `)
@@ -286,15 +286,16 @@ test("table with unicode characters", async () => {
 
   expect(await renderMarkdown(markdown)).toMatchInlineSnapshot(`
     "
-    ┌────────┬──────────┐
-    │Emoji   │Name      │
-    │────────│──────────│
-    │🎉      │Party     │
-    │────────│──────────│
-    │🚀      │Rocket    │
-    │────────│──────────│
-    │日本語  │Japanese  │
-    └────────┴──────────┘"
+    ┌───────┬──────────┐
+    │Emoji  │Name      │
+    ├───────┼──────────┤
+    │🎉     │Party     │
+    ├───────┼──────────┤
+    │🚀     │Rocket    │
+    ├───────┼──────────┤
+    │日本語 │Japanese  │
+    │       │          │
+    └───────┴──────────┘"
   `)
 })
 
@@ -308,9 +309,9 @@ test("table with links", async () => {
     "
     ┌────────┬───────────────────────────┐
     │Name    │Link                       │
-    │────────│───────────────────────────│
+    ├────────┼───────────────────────────┤
     │Google  │link (https://google.com)  │
-    │────────│───────────────────────────│
+    ├────────┼───────────────────────────┤
     │GitHub  │gh (https://github.com)    │
     └────────┴───────────────────────────┘"
   `)
@@ -336,10 +337,43 @@ test("table with many columns", async () => {
     "
     ┌───┬───┬───┬───┬───┐
     │A  │B  │C  │D  │E  │
-    │───│───│───│───│───│
+    ├───┼───┼───┼───┼───┤
     │1  │2  │3  │4  │5  │
     └───┴───┴───┴───┴───┘"
   `)
+})
+
+test("table with wide content wraps instead of truncating", async () => {
+  // With 60 char width, 3 columns of long text should wrap within cells
+  const markdown = `| Header A | Header B | Header C |
+|---|---|---|
+| This is a long cell | Also quite long | Short |`
+
+  const result = await renderMarkdown(markdown)
+  // Columns should shrink proportionally; content should NOT be truncated
+  expect(result).toContain("This is a")
+  expect(result).toContain("long cell")
+  expect(result).toContain("Also quite")
+  expect(result).toContain("long")
+  expect(result).toContain("Short")
+  // Should have proper table borders
+  expect(result).toContain("┌")
+  expect(result).toContain("┘")
+  expect(result).toContain("├")
+})
+
+test("table cells in same row have equal height with word wrap", async () => {
+  // One cell wraps, other doesn't - they should still align
+  const markdown = `| Short | This is a very long text that will definitely need to wrap |
+|---|---|
+| A | B |`
+
+  const result = await renderMarkdown(markdown)
+  // Long header should wrap but still be fully visible
+  expect(result).toContain("This is a very")
+  expect(result).toContain("long text")
+  expect(result).toContain("wrap")
+  expect(result).toContain("Short")
 })
 
 test("no tables returns original content", async () => {
@@ -369,9 +403,9 @@ test("table with nested inline formatting", async () => {
     "
     ┌─────────────────────────────────┐
     │Description                      │
-    │─────────────────────────────────│
+    ├─────────────────────────────────┤
     │This has bold and code together  │
-    │─────────────────────────────────│
+    ├─────────────────────────────────┤
     │And italic with nested bold      │
     └─────────────────────────────────┘"
   `)
@@ -389,9 +423,9 @@ test("conceal=false: table with bold text", async () => {
     "
     ┌────────────────────┬────────┐
     │Feature             │Status  │
-    │────────────────────│────────│
+    ├────────────────────┼────────┤
     │**Authentication**  │Done    │
-    │────────────────────│────────│
+    ├────────────────────┼────────┤
     │**API**             │WIP     │
     └────────────────────┴────────┘"
   `)
@@ -407,9 +441,9 @@ test("conceal=false: table with inline code", async () => {
     "
     ┌─────────────────┬───────────────┐
     │Command          │Description    │
-    │─────────────────│───────────────│
+    ├─────────────────┼───────────────┤
     │\`npm install\`    │Install deps   │
-    │─────────────────│───────────────│
+    ├─────────────────┼───────────────┤
     │\`npm run build\`  │Build project  │
     └─────────────────┴───────────────┘"
   `)
@@ -425,9 +459,9 @@ test("conceal=false: table with italic text", async () => {
     "
     ┌──────┬─────────────┐
     │Item  │Note         │
-    │──────│─────────────│
+    ├──────┼─────────────┤
     │One   │*important*  │
-    │──────│─────────────│
+    ├──────┼─────────────┤
     │Two   │*ok*         │
     └──────┴─────────────┘"
   `)
@@ -443,9 +477,9 @@ test("conceal=false: table with mixed formatting", async () => {
     "
     ┌──────────┬────────────┬──────────┐
     │Type      │Value       │Notes     │
-    │──────────│────────────│──────────│
+    ├──────────┼────────────┼──────────┤
     │**Bold**  │\`code\`      │*italic*  │
-    │──────────│────────────│──────────│
+    ├──────────┼────────────┼──────────┤
     │Plain     │**strong**  │\`cmd\`     │
     └──────────┴────────────┴──────────┘"
   `)
@@ -460,15 +494,16 @@ test("conceal=false: table with unicode characters", async () => {
 
   expect(await renderMarkdown(markdown, false)).toMatchInlineSnapshot(`
     "
-    ┌────────┬──────────┐
-    │Emoji   │Name      │
-    │────────│──────────│
-    │🎉      │Party     │
-    │────────│──────────│
-    │🚀      │Rocket    │
-    │────────│──────────│
-    │日本語  │Japanese  │
-    └────────┴──────────┘"
+    ┌───────┬──────────┐
+    │Emoji  │Name      │
+    ├───────┼──────────┤
+    │🎉     │Party     │
+    ├───────┼──────────┤
+    │🚀     │Rocket    │
+    ├───────┼──────────┤
+    │日本語 │Japanese  │
+    │       │          │
+    └───────┴──────────┘"
   `)
 })
 
@@ -482,9 +517,9 @@ test("conceal=false: basic table alignment", async () => {
     "
     ┌───────┬─────┐
     │Name   │Age  │
-    │───────│─────│
+    ├───────┼─────┤
     │Alice  │30   │
-    │───────│─────│
+    ├───────┼─────┤
     │Bob    │5    │
     └───────┴─────┘"
   `)
@@ -505,7 +540,7 @@ This is a paragraph after the table.`
 
     ┌───────┬─────┐
     │Name   │Age  │
-    │───────│─────│
+    ├───────┼─────┤
     │Alice  │30   │
     └───────┴─────┘
 
@@ -1033,7 +1068,7 @@ test("malformed table with missing pipes", async () => {
     "
     ┌───┬───┐
     │A  │B  │
-    │───│───│
+    ├───┼───┤
     │1  │2  │
     └───┴───┘"
   `)
@@ -1118,7 +1153,7 @@ test("table at end with trailing blank lines", async () => {
     "
     ┌───┬───┐
     │A  │B  │
-    │───│───│
+    ├───┼───┤
     │1  │2  │
     └───┴───┘"
   `)
