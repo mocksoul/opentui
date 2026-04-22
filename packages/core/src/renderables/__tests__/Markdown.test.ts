@@ -530,6 +530,24 @@ test("table with links", async () => {
   `)
 })
 
+test("table with links where label equals href is deduped", async () => {
+  const markdown = `| Service | URL |
+|---|---|
+| Example | [https://example.com](https://example.com) |
+| Docs | [https://docs.example.com](https://docs.example.com) |`
+
+  expect(await renderMarkdown(markdown)).toMatchInlineSnapshot(`
+    "
+    ┌───────┬────────────────────────┐
+    │Service│URL                     │
+    ├───────┼────────────────────────┤
+    │Example│https://example.com     │
+    ├───────┼────────────────────────┤
+    │Docs   │https://docs.example.com│
+    └───────┴────────────────────────┘"
+  `)
+})
+
 test("single row table (header + delimiter only)", async () => {
   const markdown = `| Only | Header |
 |---|---|`
