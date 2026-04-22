@@ -449,9 +449,15 @@ export class MarkdownRenderable extends Renderable {
           for (const child of token.tokens) {
             this.renderInlineTokenWithStyle(child as MarkedToken, chunks, "markup.link.label", linkHref)
           }
-          chunks.push(this.createChunk(" (", "markup.link", linkHref))
-          chunks.push(this.createChunk(token.href, "markup.link.url", linkHref))
-          chunks.push(this.createChunk(")", "markup.link", linkHref))
+          // Skip redundant `(href)` suffix when the label already equals the URL
+          // (bare URLs and markdown autolinks like `[https://x.com](https://x.com)`),
+          // which would otherwise render as `https://x.com (https://x.com)`.
+          const labelText = token.tokens.map((t) => (t as MarkedToken).raw).join("")
+          if (labelText !== token.href) {
+            chunks.push(this.createChunk(" (", "markup.link", linkHref))
+            chunks.push(this.createChunk(token.href, "markup.link.url", linkHref))
+            chunks.push(this.createChunk(")", "markup.link", linkHref))
+          }
         } else {
           chunks.push(this.createChunk("[", "markup.link", linkHref))
           for (const child of token.tokens) {
