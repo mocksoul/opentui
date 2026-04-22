@@ -1373,6 +1373,24 @@ test("incomplete link (no closing paren)", async () => {
   `)
 })
 
+test("link with label equal to href is deduped", async () => {
+  const markdown = `[https://example.com](https://example.com)`
+
+  expect(await renderMarkdown(markdown)).toMatchInlineSnapshot(`
+    "
+    https://example.com"
+  `)
+})
+
+test("link with label different from href shows both", async () => {
+  const markdown = `[Example](https://example.com)`
+
+  expect(await renderMarkdown(markdown)).toMatchInlineSnapshot(`
+    "
+    Example (https://example.com)"
+  `)
+})
+
 test("incomplete table (only header)", async () => {
   const markdown = `| Header1 | Header2 |`
 
